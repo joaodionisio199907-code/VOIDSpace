@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOID ECHOS | Sistema de Navegación Universal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-purple: #bc13fe;
+            --panel-bg: rgba(1, 2, 8, 0.95);
+            --border-glow: rgba(0, 242, 255, 0.3);
+            --text-main: #e0e0e0;
+            --accent: #4db8ff;
+            --gold: #f1c40f;
+        }
+
+        body {
+            background: #010208;
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            display: grid;
+            grid-template-areas: "header header header" "nav main aside";
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 85px 100vh;
+            overflow: hidden;
+        }
+
+        /* --- HEADER (RECURSOS) --- */
+        header { 
+            grid-area: header; 
+            background: rgba(0, 0, 0, 0.9); 
+            border-bottom: 1px solid var(--neon-blue); 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            z-index: 100; 
+        }
+        .resource-item { display: flex; align-items: center; gap: 10px; }
+        .res-text-block span { display: block; font-family: 'Orbitron'; font-size: 0.6rem; color: var(--neon-blue); }
+        .res-value { font-size: 1.1rem; font-weight: bold; text-shadow: 0 0 5px var(--neon-blue); }
+
+        /* --- NAVEGACIÓN IZQUIERDA (LISTADO Y BUSCADOR) --- */
+        nav { 
+            grid-area: nav; 
+            background: var(--panel-bg); 
+            border-right: 1px solid var(--border-glow); 
+            display: flex;
+            flex-direction: column;
+            z-index: 90;
+        }
+        .nav-header {
+            padding: 15px 20px;
+            font-family: 'Orbitron';
+            font-size: 0.7rem;
+            color: var(--neon-blue);
+            background: rgba(0,0,0,0.5);
+        }
+        .search-container { padding: 10px 20px; border-bottom: 1px solid var(--border-glow); }
+        #nav-search {
+            width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-glow);
+            color: white; padding: 8px; font-family: 'Rajdhani'; font-size: 0.9rem; outline: none;
+        }
+        #object-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--neon-blue) transparent;
+        }
+        .list-group { margin-bottom: 2px; }
+        .item-galaxy {
+            padding: 12px 20px; background: rgba(0, 242, 255, 0.03);
+            font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer;
+            border-left: 4px solid var(--neon-purple); display: flex; justify-content: space-between;
+        }
+        .item-sun {
+            padding: 8px 20px 8px 30px; background: rgba(241, 196, 15, 0.05);
+            font-size: 0.8rem; color: var(--gold); cursor: pointer; font-weight: bold;
+        }
+        .item-planet {
+            padding: 6px 20px 6px 45px; font-size: 0.85rem; cursor: pointer;
+            color: #aaa; border-bottom: 1px solid rgba(255,255,255,0.02);
+            display: flex; justify-content: space-between;
+        }
+        .item-planet:hover { color: var(--neon-blue); background: rgba(0, 242, 255, 0.05); }
+
+        /* --- MAPA PRINCIPAL --- */
+        main { grid-area: main; background: #000; position: relative; }
+        #map-canvas { width: 100%; height: 100%; cursor: grab; display: block; }
+        #map-canvas:active { cursor: grabbing; }
+
+        /* --- INFO DERECHA --- */
+        aside { 
+            grid-area: aside; background: var(--panel-bg); 
+            border-left: 1px solid var(--border-glow); padding: 25px; 
+            display: flex; flex-direction: column; z-index: 90;
+        }
+        .info-header { font-family: 'Orbitron'; color: var(--neon-blue); margin: 0; font-size: 1.3rem; }
+        .info-sub { font-family: 'Share Tech Mono'; color: var(--gold); font-size: 0.8rem; margin-bottom: 15px; }
+        .info-desc { font-size: 0.9rem; color: #999; line-height: 1.5; margin-bottom: 20px; }
+        .info-stats { 
+            background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid var(--border-glow);
+            font-family: 'Share Tech Mono'; font-size: 0.85rem;
+        }
+        .stat-line { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .btn-action {
+            margin-top: auto; background: none; border: 1px solid var(--neon-blue);
+            color: var(--neon-blue); padding: 15px; font-family: 'Orbitron';
+            cursor: pointer; transition: 0.3s;
+        }
+        .btn-action:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="resource-item">
+            <div class="res-text-block"><span>FERRUM</span><div class="res-value" id="res-ferrum">1,250</div></div>
+        </div>
+        <div class="resource-item">
+            <div class="res-text-block"><span>SÍLICE</span><div class="res-value" id="res-silice">840</div></div>
+        </div>
+        <div class="resource-item">
+            <div class="res-text-block"><span>H-3 ISOTOPE</span><div class="res-value" id="res-h3">200</div></div>
+        </div>
+        <div class="resource-item">
+            <div class="res-text-block"><span>ENERGÍA</span><div class="res-value" style="color:#2ecc71">45 / 150</div></div>
+        </div>
+    </header>
+
+    <nav>
+        <div class="nav-header">CARTOGRAFÍA ESTELAR</div>
+        <div class="search-container">
+            <input type="text" id="nav-search" placeholder="BUSCAR PLANETA O SISTEMA..." oninput="filterObjects()">
+        </div>
+        <div id="object-list"></div>
+    </nav>
+
+    <main>
+        <canvas id="map-canvas"></canvas>
+    </main>
+
+    <aside id="info-panel">
+        <h2 class="info-header" id="target-name">SIN SELECCIÓN</h2>
+        <div class="info-sub" id="target-type">ESPERANDO ESCANEO...</div>
+        <p class="info-desc" id="target-desc">Utilice el mapa o la lista para navegar. Seleccione una entidad para obtener datos de telemetría detallados.</p>
+        
+        <div class="info-stats">
+            <div class="stat-line"><span>COORDENADAS</span> <span id="stat-coords">0,0,0</span></div>
+            <div class="stat-line"><span>ESTADO</span> <span id="stat-status" style="color:#555">OFFLINE</span></div>
+            <div class="stat-line"><span>RECURSOS</span> <span id="stat-res" style="color:var(--neon-blue)">ANALIZANDO...</span></div>
+        </div>
+
+        <button class="btn-action">INICIAR VIAJE INTERESTELAR</button>
+    </aside>
+
+    <script>
+        const canvas = document.getElementById('map-canvas');
+        const ctx = canvas.getContext('2d');
+        const listContainer = document.getElementById('object-list');
+
+        let width, height, scale = 0.05, offset = { x: 0, y: 0 };
+        let isDragging = false, lastMouse = { x: 0, y: 0 };
+        let world = [];
+        let cameraTarget = null;
+        let followedPlanet = null; // Variable para el planeta seguido
+
+        // --- GENERACIÓN DEL UNIVERSO ---
+        function initUniverse() {
+            const galColors = ["#4db8ff", "#bc13fe", "#00ff88", "#f1c40f"];
+            world = [];
+
+            for(let i=0; i<15; i++) {
+                let gal = {
+                    id: 'g'+i,
+                    name: "GALAXIA " + (1000 + i),
+                    type: 'GALAXY',
+                    x: (Math.random()-0.5) * 50000, 
+                    y: (Math.random()-0.5) * 50000,
+                    color: galColors[i % 4],
+                    systems: []
+                };
+
+                const numSystems = 3 + Math.floor(Math.random() * 3);
+                for(let s=0; s<numSystems; s++) {
+                    let system = {
+                        id: `s-${i}-${s}`,
+                        name: `SOLIS-${i}${s}`,
+                        type: 'SUN',
+                        dist: 2000 + (s * 1500),
+                        angle: Math.random() * Math.PI * 2,
+                        color: "#ffcc00",
+                        planets: []
+                    };
+
+                    const roles = ["Base Minera", "Laboratorio", "Puesto de Avanzada", "Colonia"];
+                    for(let p=0; p<4; p++) {
+                        system.planets.push({
+                            id: `p-${i}-${s}-${p}`,
+                            name: `P-Centauri ${i}${s}${p}`,
+                            type: 'PLANET',
+                            dist: 400 + (p * 300),
+                            angle: Math.random() * Math.PI * 2,
+                            speed: 0.001 + (Math.random() * 0.002),
+                            role: roles[p % 4],
+                            color: gal.color,
+                            size: 6 + Math.random() * 8,
+                            parentSystem: system,
+                            parentGalaxy: gal
+                        });
+                    }
+                    gal.systems.push(system);
+                }
+                world.push(gal);
+            }
+            updateList();
+        }
+
+        function updateList() {
+            let html = "";
+            world.forEach(g => {
+                html += `
+                    <div class="list-group">
+                        <div class="item-galaxy" onclick="jumpTo('${g.id}')">${g.name} <i class="fas fa-expand"></i></div>`;
+                
+                g.systems.forEach(s => {
+                    html += `<div class="item-sun" onclick="jumpTo('${s.id}')"><i class="fas fa-sun"></i> ${s.name}</div>`;
+                    s.planets.forEach(p => {
+                        html += `
+                            <div class="item-planet" onclick="jumpTo('${p.id}')">
+                                ${p.name} <span>${p.role}</span>
+                            </div>`;
+                    });
+                });
+                html += `</div>`;
+            });
+            listContainer.innerHTML = html;
+        }
+
+        function filterObjects() {
+            const query = document.getElementById('nav-search').value.toLowerCase();
+            const items = document.querySelectorAll('.item-planet, .item-sun, .item-galaxy');
+            items.forEach(item => {
+                item.style.display = item.innerText.toLowerCase().includes(query) ? "flex" : "none";
+            });
+        }
+
+        function jumpTo(id) {
+            followedPlanet = null; // Reiniciamos seguimiento al saltar manualmente
+            world.forEach(g => {
+                if(g.id === id) { cameraTarget = { x: -g.x, y: -g.y, s: 0.04 }; updatePanel(g); }
+                g.systems.forEach(s => {
+                    const sx = g.x + Math.cos(s.angle)*s.dist;
+                    const sy = g.y + Math.sin(s.angle)*s.dist*0.5;
+                    if(s.id === id) { cameraTarget = { x: -sx, y: -sy, s: 0.2 }; updatePanel(s); }
+                    
+                    s.planets.forEach(p => {
+                        if(p.id === id) {
+                            followedPlanet = p; // Activamos seguimiento
+                            scale = 0.8; // Zoom directo
+                            updatePanel(p);
+                        }
+                    });
+                });
+            });
+        }
+
+        function updatePanel(obj) {
+            document.getElementById('target-name').innerText = obj.name;
+            document.getElementById('target-type').innerText = obj.type + " // STATUS: ACTIVE";
+            document.getElementById('stat-coords').innerText = `${Math.floor(Math.random()*999)}, ${Math.floor(Math.random()*999)}`;
+            document.getElementById('stat-status').innerText = "ONLINE";
+            document.getElementById('stat-status').style.color = "#00ff88";
+            document.getElementById('target-desc').innerText = obj.role ? 
+                `Cuerpo celeste bajo jurisdicción. Función: ${obj.role}. Recursos detectados en el sector.` : 
+                `Entidad estelar de gran masa. Punto de anclaje para sistemas planetarios locales.`;
+            document.getElementById('stat-res').innerText = obj.type === 'PLANET' ? "Ferrum / Sílice" : "H-3 / Radiación";
+        }
+
+        function draw() {
+            // Lógica de seguimiento de cámara
+            if(followedPlanet) {
+                const s = followedPlanet.parentSystem;
+                const g = followedPlanet.parentGalaxy;
+                const sx = g.x + Math.cos(s.angle) * s.dist;
+                const sy = g.y + Math.sin(s.angle) * s.dist * 0.5;
+                const px = sx + Math.cos(followedPlanet.angle) * followedPlanet.dist;
+                const py = sy + Math.sin(followedPlanet.angle) * followedPlanet.dist * 0.4;
+                
+                offset.x += (-px - offset.x) * 0.1;
+                offset.y += (-py - offset.y) * 0.1;
+            } else if(cameraTarget) {
+                offset.x += (cameraTarget.x - offset.x) * 0.08;
+                offset.y += (cameraTarget.y - offset.y) * 0.08;
+                scale += (cameraTarget.s - scale) * 0.08;
+                if(Math.hypot(cameraTarget.x-offset.x, cameraTarget.y-offset.y) < 0.1) cameraTarget = null;
+            }
+
+            ctx.fillStyle = "#010208";
+            ctx.fillRect(0,0,width,height);
+            ctx.save();
+            ctx.translate(width/2, height/2);
+            ctx.scale(scale, scale);
+            ctx.translate(offset.x, offset.y);
+
+            world.forEach(g => {
+                let gRad = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, 5000);
+                gRad.addColorStop(0, g.color + "10"); gRad.addColorStop(1, "transparent");
+                ctx.fillStyle = gRad; ctx.beginPath(); ctx.arc(g.x, g.y, 5000, 0, Math.PI*2); ctx.fill();
+
+                g.systems.forEach(s => {
+                    const sx = g.x + Math.cos(s.angle) * s.dist;
+                    const sy = g.y + Math.sin(s.angle) * s.dist * 0.5;
+
+                    let sunGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, 80);
+                    sunGrad.addColorStop(0, "#fff"); sunGrad.addColorStop(0.4, "#f1c40f"); sunGrad.addColorStop(1, "transparent");
+                    ctx.fillStyle = sunGrad; ctx.beginPath(); ctx.arc(sx, sy, 80, 0, Math.PI*2); ctx.fill();
+
+                    s.planets.forEach(p => {
+                        p.angle += p.speed;
+                        const px = sx + Math.cos(p.angle) * p.dist;
+                        const py = sy + Math.sin(p.angle) * p.dist * 0.4;
+
+                        ctx.strokeStyle = "rgba(255,255,255,0.05)";
+                        ctx.beginPath(); ctx.ellipse(sx, sy, p.dist, p.dist*0.4, 0, 0, Math.PI*2); ctx.stroke();
+
+                        ctx.fillStyle = p.color;
+                        ctx.shadowBlur = 10; ctx.shadowColor = p.color;
+                        ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI*2); ctx.fill();
+                        ctx.shadowBlur = 0;
+                    });
+                });
+            });
+            ctx.restore();
+            requestAnimationFrame(draw);
+        }
+
+        // --- INTERACCIONES ---
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left - width/2) / scale - offset.x;
+            const mouseY = (e.clientY - rect.top - height/2) / scale - offset.y;
+
+            world.forEach(g => {
+                g.systems.forEach(s => {
+                    s.planets.forEach(p => {
+                        const sx = g.x + Math.cos(s.angle) * s.dist;
+                        const sy = g.y + Math.sin(s.angle) * s.dist * 0.5;
+                        const px = sx + Math.cos(p.angle) * p.dist;
+                        const py = sy + Math.sin(p.angle) * p.dist * 0.4;
+                        
+                        const dist = Math.hypot(mouseX - px, mouseY - py);
+                        if(dist < p.size * 2) {
+                            followedPlanet = p;
+                            updatePanel(p);
+                        }
+                    });
+                });
+            });
+        });
+
+        function resize() { width = canvas.width = canvas.parentElement.clientWidth; height = canvas.height = canvas.parentElement.clientHeight; }
+        window.onresize = resize;
+        
+        canvas.onmousedown = e => { 
+            isDragging = true; 
+            lastMouse = { x: e.clientX, y: e.clientY }; 
+            cameraTarget = null;
+            followedPlanet = null; // Detener seguimiento al arrastrar manualmente
+        };
+        
+        window.onmousemove = e => { if(isDragging) { offset.x += (e.clientX - lastMouse.x)/scale; offset.y += (e.clientY - lastMouse.y)/scale; lastMouse = { x: e.clientX, y: e.clientY }; } };
+        window.onmouseup = () => isDragging = false;
+        
+        canvas.onwheel = e => { 
+            scale *= (e.deltaY > 0 ? 0.9 : 1.1); 
+            scale = Math.max(0.001, Math.min(3, scale)); 
+            cameraTarget = null; 
+        };
+
+        resize(); initUniverse(); draw();
+    </script>
+</body>
+</html>
