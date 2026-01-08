@@ -4,6 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VOID ECHOS | Comando Central</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://mvlorpsxrvwzeqrprevd.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_CJXDlDiFZ1rAxleLhLYS8g_dqYbCzqx';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function validarAcceso() {
+            const { data: { user }, error } = await supabaseClient.auth.getUser();
+            
+            // Si hay error o no hay usuario logueado
+            if (error || !user) {
+                console.log("Acceso no autorizado. Redirigiendo al Nexo...");
+                window.location.href = 'index.html';
+            } else {
+                console.log("Operativo verificado:", user.email);
+                // Aquí podrías disparar una función para cargar los datos del usuario
+            }
+        }
+        validarAcceso();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
