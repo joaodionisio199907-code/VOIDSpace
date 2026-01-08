@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOID ECHOS | Operación Galáctica</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Syncopate:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff007a;
+            --neon-purple: #bc13fe;
+            --up-green: #2ecc71;
+            --down-red: #e74c3c;
+            --bg: #010208;
+            --glass: rgba(0, 242, 255, 0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at center, #0a192f 0%, #010208 100%);
+        }
+
+        /* FONDO ANIMADO DE ESTRELLAS */
+        #stars {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            animation: moveStars 150s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes moveStars {
+            from { background-position: 0 0; }
+            to { background-position: 10000px 5000px; }
+        }
+
+        /* MERCADO DE VALORES (TICKER) */
+        .market-ticker {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 2px solid var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue);
+            height: 45px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            position: fixed;
+            top: 0; width: 100%; z-index: 2000;
+        }
+
+        .ticker-wrap { display: flex; animation: ticker 25s linear infinite; }
+        .ticker-item {
+            padding: 0 50px;
+            white-space: nowrap;
+            font-family: 'Orbitron';
+            font-weight: bold;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        .up { color: var(--up-green); text-shadow: 0 0 5px var(--up-green); }
+        .down { color: var(--down-red); text-shadow: 0 0 5px var(--down-red); }
+
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* HERO SECTION */
+        .hero {
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding-top: 60px;
+        }
+
+        .glitch {
+            font-family: 'Orbitron';
+            font-size: clamp(3rem, 10vw, 6rem);
+            font-weight: 900;
+            letter-spacing: 15px;
+            color: white;
+            text-shadow: 3px 3px var(--neon-pink), -3px -3px var(--neon-blue);
+            margin-bottom: 10px;
+        }
+
+        /* LOGIN CARD */
+        .login-card {
+            background: var(--glass);
+            border: 2px solid var(--neon-blue);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
+            width: 400px;
+            margin-top: 20px;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid var(--neon-purple);
+            color: var(--neon-blue);
+            font-family: 'Orbitron';
+            font-size: 0.8rem;
+            border-radius: 5px;
+        }
+
+        .btn-glow {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
+            border: none;
+            color: white;
+            font-family: 'Orbitron';
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            text-transform: uppercase;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-glow:hover {
+            box-shadow: 0 0 40px var(--neon-blue);
+            transform: scale(1.05);
+        }
+
+        /* NOTICIAS & ROLES (CONTENEDORES) */
+        .grid-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .section-title {
+            text-align: center;
+            font-family: 'Syncopate';
+            color: var(--neon-blue);
+            text-shadow: 0 0 15px var(--neon-blue);
+            margin-bottom: 50px;
+            font-size: 1.5rem;
+        }
+
+        .card-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .news-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: 0.4s;
+        }
+
+        .news-card:hover {
+            background: rgba(188, 19, 254, 0.08);
+            border-color: var(--neon-purple);
+            transform: translateY(-10px);
+        }
+
+        .news-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transition: 0.6s;
+        }
+
+        .news-card:hover::before { left: 100%; }
+
+        .role-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .tag-bonus {
+            font-size: 0.75rem;
+            color: #888;
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .tag-bonus li { margin-bottom: 5px; }
+
+        footer {
+            padding: 60px 20px;
+            text-align: center;
+            border-top: 1px solid rgba(0, 242, 255, 0.1);
+            background: rgba(0,0,0,0.9);
+            margin-top: 100px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div class="market-ticker">
+    <div class="ticker-wrap">
+        <div class="ticker-item">FERRUM LÍQUIDO: 1.25k <span class="up">▲ +5.2%</span></div>
+        <div class="ticker-item">PRISMAS SÍLICE: 0.84k <span class="down">▼ -1.8%</span></div>
+        <div class="ticker-item">ISÓTOPO-H3: 14.22k <span class="up">▲ +10.5%</span></div>
+        <div class="ticker-item">MATERIA OSCURA: 1.5k <span class="up">▲ +0.02%</span></div>
+        <div class="ticker-item">FERRUM LÍQUIDO: 1.25k <span class="up">▲ +5.2%</span></div>
+        <div class="ticker-item">PRISMAS SÍLICE: 0.84k <span class="down">▼ -1.8%</span></div>
+        <div class="ticker-item">ISÓTOPO-H3: 14.22k <span class="up">▲ +10.5%</span></div>
+        <div class="ticker-item">MATERIA OSCURA: 1.5k <span class="up">▲ +0.02%</span></div>
+    </div>
+</div>
+
+<section class="hero">
+    <h1 class="glitch animate__animated animate__pulse animate__infinite">VOID ECHOS</h1>
+    <p class="animate__animated animate__fadeIn" style="letter-spacing: 5px; color: var(--neon-blue); font-family: 'Orbitron';">SISTEMA DE CONTROL GALÁCTICO</p>
+    
+    <div class="login-card animate__animated animate__backInUp">
+        <h3 style="margin-top:0; color:var(--neon-blue); font-family: 'Syncopate'; font-size: 0.9rem;">ACCESO AL NEXO</h3>
+        <input type="text" class="login-input" placeholder="FIRMA DE OPERATIVO">
+        <input type="password" class="login-input" placeholder="CÓDIGO NEURONAL">
+        <button class="btn-glow">Sincronizar Conciencia</button>
+        <p style="font-size: 0.7rem; margin-top: 15px;">¿Sin registro? <a href="#" style="color:var(--neon-pink); text-decoration:none;">Generar Nuevo Cortex</a></p>
+    </div>
+</section>
+
+<div class="grid-container">
+    <h2 class="section-title">TRANSMISIONES RECIENTES</h2>
+    <div class="card-layout">
+        <div class="news-card animate__animated animate__fadeInLeft">
+            <i class="fas fa-satellite-dish" style="color: var(--neon-blue); font-size: 1.5rem;"></i>
+            <h3 style="margin: 15px 0;">Nueva Expedición</h3>
+            <p style="color: #888; font-size: 0.9rem;">Anomalía detectada en el sector Omega. 8 horas de exploración para obtener Materia Oscura.</p>
+        </div>
+        <div class="news-card animate__animated animate__fadeInUp">
+            <i class="fas fa-skull-crossbones" style="color: var(--neon-pink); font-size: 1.5rem;"></i>
+            <h3 style="margin: 15px 0;">Optimización Kamikaze</h3>
+            <p style="color: #888; font-size: 0.9rem;">Los nanobots de inmolación ahora cubren un radio de daño un 15% mayor.</p>
+        </div>
+        <div class="news-card animate__animated animate__fadeInRight">
+            <i class="fas fa-history" style="color: var(--neon-purple); font-size: 1.5rem;"></i>
+            <h3 style="margin: 15px 0;">Campaña PvE</h3>
+            <p style="color: #888; font-size: 0.9rem;">Capítulo "Ecos del Vacío" disponible. Recompensas únicas sin riesgo de flota.</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid-container">
+    <h2 class="section-title">ELIGE TU CAMINO</h2>
+    <div class="card-layout">
+        
+        <div class="news-card animate__animated animate__fadeInUp" style="border-top: 4px solid var(--up-green); animation-delay: 0.1s;">
+            <i class="fas fa-hammer role-icon" style="color: var(--up-green); filter: drop-shadow(0 0 10px var(--up-green));"></i>
+            <h3 style="color: var(--up-green); font-family: 'Syncopate'; font-size: 1rem;">MINERO INDUSTRIAL</h3>
+            <p style="font-size: 0.9rem; color: #ccc;">Domina la extracción y conviértete en el banco de la galaxia.</p>
+            <ul class="tag-bonus">
+                <li><i class="fas fa-check"></i> +20% Producción Ferrum/Prismas</li>
+                <li><i class="fas fa-check"></i> Almacenes de gran escala</li>
+            </ul>
+        </div>
+
+        <div class="news-card animate__animated animate__fadeInUp" style="border-top: 4px solid var(--neon-pink); animation-delay: 0.3s;">
+            <i class="fas fa-crosshairs role-icon" style="color: var(--neon-pink); filter: drop-shadow(0 0 10px var(--neon-pink));"></i>
+            <h3 style="color: var(--neon-pink); font-family: 'Syncopate'; font-size: 1rem;">CAZARECOMPENSAS</h3>
+            <p style="font-size: 0.9rem; color: #ccc;">Vive de los escombros y de la caza de piratas IA.</p>
+            <ul class="tag-bonus">
+                <li><i class="fas fa-check"></i> +15% Daño contra NPCs</li>
+                <li><i class="fas fa-check"></i> Sensores de rastreo avanzado</li>
+            </ul>
+        </div>
+
+        <div class="news-card animate__animated animate__fadeInUp" style="border-top: 4px solid var(--neon-blue); animation-delay: 0.5s;">
+            <i class="fas fa-chart-line role-icon" style="color: var(--neon-blue); filter: drop-shadow(0 0 10px var(--neon-blue));"></i>
+            <h3 style="color: var(--neon-blue); font-family: 'Syncopate'; font-size: 1rem;">ESPECULADOR</h3>
+            <p style="font-size: 0.9rem; color: #ccc;">Manipula el mercado y gana créditos con el Ticker.</p>
+            <ul class="tag-bonus">
+                <li><i class="fas fa-check"></i> Tasas de mercado reducidas</li>
+                <li><i class="fas fa-check"></i> Predicciones de Isótopo-H3</li>
+            </ul>
+        </div>
+
+    </div>
+</div>
+
+<footer>
+    <div style="margin-bottom: 30px;">
+        <i class="fab fa-discord" style="font-size: 2rem; margin: 0 20px; color: #7289da; cursor: pointer;"></i>
+        <i class="fab fa-twitter" style="font-size: 2rem; margin: 0 20px; color: #1da1f2; cursor: pointer;"></i>
+        <i class="fab fa-youtube" style="font-size: 2rem; margin: 0 20px; color: #ff0000; cursor: pointer;"></i>
+    </div>
+    <p style="color: #444; font-family: 'Orbitron'; font-size: 0.7rem; letter-spacing: 3px;">VOID ECHOS PROTOCOL v0.95 | &copy; 2026 CONQUISTA EL VACÍO</p>
+</footer>
+
+</body>
+</html>

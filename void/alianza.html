@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOID ECHOS | Alliance Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-purple: #bc13fe;
+            --bg-dark: #010409;
+            --panel-bg: rgba(6, 11, 25, 0.9);
+            --border-glow: rgba(0, 242, 255, 0.2);
+            --terminal-green: #00ff41;
+            --danger: #ff0055;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-image: radial-gradient(circle at 50% 10%, #0a1729 0%, #010409 100%);
+            min-height: 100vh;
+        }
+
+        /* Scanline Animado */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .alliance-grid {
+            display: grid;
+            grid-template-areas: 
+                "header header"
+                "stats diplomat"
+                "members log";
+            grid-template-columns: 1fr 350px;
+            grid-gap: 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* --- SECCIONES COMUNES --- */
+        .ui-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 4px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ui-panel::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--neon-blue);
+        }
+
+        h2 {
+            font-family: 'Orbitron';
+            font-size: 0.9rem;
+            color: var(--neon-blue);
+            margin: 0 0 15px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- HEADER --- */
+        .alliance-header {
+            grid-area: header;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px;
+            background: linear-gradient(90deg, rgba(0, 242, 255, 0.05) 0%, transparent 100%);
+        }
+
+        .alliance-info { display: flex; align-items: center; gap: 20px; }
+        .alliance-logo {
+            width: 70px; height: 70px;
+            border: 2px solid var(--neon-purple);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; color: var(--neon-purple);
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+        }
+
+        .alliance-title h1 {
+            font-family: 'Orbitron';
+            margin: 0; font-size: 1.8rem; letter-spacing: 3px;
+        }
+
+        /* --- STATS GLOBALES --- */
+        .stats-area {
+            grid-area: stats;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: rgba(0,0,0,0.4);
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+        }
+
+        .stat-label { font-family: 'Share Tech Mono'; font-size: 0.7rem; color: #666; display: block; }
+        .stat-val { font-family: 'Orbitron'; font-size: 1.2rem; color: var(--neon-blue); }
+
+        /* --- TABLA DE MIEMBROS --- */
+        .members-area { grid-area: members; }
+        
+        .member-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .member-table th {
+            text-align: left;
+            padding: 10px;
+            font-size: 0.7rem;
+            color: var(--neon-purple);
+            border-bottom: 1px solid var(--border-glow);
+        }
+
+        .member-row {
+            transition: 0.2s;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .member-row:hover { background: rgba(0, 242, 255, 0.05); }
+
+        .member-row td { padding: 12px 10px; }
+
+        .role-badge {
+            font-family: 'Orbitron';
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border: 1px solid #444;
+            border-radius: 2px;
+        }
+
+        .role-leader { border-color: var(--gold); color: var(--gold); }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .online { background: var(--terminal-green); box-shadow: 0 0 5px var(--terminal-green); }
+
+        /* --- LOGS / ACTIVIDAD --- */
+        .log-area { grid-area: log; }
+        
+        .log-list {
+            font-family: 'Share Tech Mono';
+            font-size: 0.8rem;
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-item {
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed rgba(255,255,255,0.05);
+            display: flex;
+            gap: 10px;
+        }
+
+        .log-time { color: #444; }
+
+        /* --- DIPLOMACIA --- */
+        .diplomacy-area { grid-area: diplomat; }
+
+        .dip-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            margin-bottom: 5px;
+        }
+
+        .relation-war { color: var(--danger); border-right: 3px solid var(--danger); }
+        .relation-nap { color: var(--neon-blue); border-right: 3px solid var(--neon-blue); }
+
+    </style>
+</head>
+<body>
+
+<div class="alliance-grid">
+    <header class="ui-panel alliance-header">
+        <div class="alliance-info">
+            <div class="alliance-logo"><i class="fas fa-atom"></i></div>
+            <div class="alliance-title">
+                <h1>[V.O.I.D] AURORA CONSORTIUM</h1>
+                <span style="color: var(--neon-purple); font-family: 'Share Tech Mono';">ID: #4409-X | Nivel 12</span>
+            </div>
+        </div>
+        <div class="alliance-actions">
+            <button style="background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px 20px; font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer;">
+                MENSAJE CIRCULAR
+            </button>
+        </div>
+    </header>
+
+    <div class="stats-area">
+        <div class="ui-panel stat-card">
+            <span class="stat-label">PUNTOS TOTALES</span>
+            <span class="stat-val">42.5M</span>
+        </div>
+        <div class="ui-panel stat-card">
+            <span class="stat-label">MIEMBROS</span>
+            <span class="stat-val">24 / 40</span>
+        </div>
+        <div class="ui-panel stat-card" style="border-left-color: var(--neon-purple);">
+            <span class="stat-label">POSICIÓN RANKING</span>
+            <span class="stat-val">#04</span>
+        </div>
+    </div>
+
+    <section class="ui-panel members-area">
+        <h2><i class="fas fa-users-cog"></i> Manifiesto de Flota</h2>
+        <table class="member-table">
+            <thead>
+                <tr>
+                    <th>Nombre de Operador</th>
+                    <th>Rango</th>
+                    <th>Poder</th>
+                    <th>Sector Actual</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody id="memberList">
+                </tbody>
+        </table>
+    </section>
+
+    <section class="ui-panel diplomacy-area">
+        <h2><i class="fas fa-handshake"></i> Diplomacia Extranjera</h2>
+        <div class="dip-row relation-war">
+            <span>STELAR CORP</span>
+            <span style="font-family: 'Orbitron'; font-size: 0.6rem;">GUERRA</span>
+        </div>
+        <div class="dip-row relation-nap">
+            <span>NOVA_ALLIANCE</span>
+            <span style="font-family: 'Orbitron'; font-size: 0.6rem;">P.N.A</span>
+        </div>
+        <div class="dip-row" style="color: #666;">
+            <span>CYBER_PUNKS</span>
+            <span style="font-family: 'Orbitron'; font-size: 0.6rem;">NEUTRAL</span>
+        </div>
+    </section>
+
+    <section class="ui-panel log-area">
+        <h2><i class="fas fa-list-ul"></i> Registro de Eventos</h2>
+        <div class="log-list" id="logItems">
+            </div>
+    </section>
+</div>
+
+<script>
+    const allianceData = {
+        members: [
+            { name: "REX_COMMANDER", role: "LÍDER", points: "8.2M", sector: "X-22", online: true },
+            { name: "VOID_WALKER", role: "OFICIAL", points: "5.4M", sector: "G-09", online: true },
+            { name: "ZERO_K", role: "SARGENTO", points: "3.1M", sector: "K-55", online: false },
+            { name: "ASTRO_BELLE", role: "MIEMBRO", points: "2.8M", sector: "Z-11", online: true },
+            { name: "DARK_MATTER", role: "RECLUTA", points: "1.2M", sector: "V-00", online: false }
+        ],
+        logs: [
+            { time: "14:20", msg: "REX_COMMANDER ha iniciado una investigación de Flota Nivel 5" },
+            { time: "12:05", msg: "Guerra declarada contra STELAR CORP" },
+            { time: "09:44", msg: "ASTRO_BELLE ha donado 50.000 de Ferrum al fondo" },
+            { time: "08:12", msg: "Nueva alianza: Pacto de No Agresión con NOVA_ALLIANCE" }
+        ]
+    };
+
+    function initAlliance() {
+        const mBody = document.getElementById('memberList');
+        const lBody = document.getElementById('logItems');
+
+        // Miembros
+        mBody.innerHTML = allianceData.members.map(m => `
+            <tr class="member-row">
+                <td style="font-weight: bold; letter-spacing: 1px;">${m.name}</td>
+                <td><span class="role-badge ${m.role === 'LÍDER' ? 'role-leader' : ''}">${m.role}</span></td>
+                <td style="font-family: 'Share Tech Mono'; color: var(--neon-blue);">${m.points}</td>
+                <td style="color: #666; font-size: 0.8rem;">${m.sector}</td>
+                <td>
+                    <span class="status-dot ${m.online ? 'online' : ''}" style="${!m.online ? 'background: #333;' : ''}"></span>
+                    <span style="font-size: 0.7rem; color: ${m.online ? 'var(--terminal-green)' : '#444'}">
+                        ${m.online ? 'ACTIVO' : 'OFFLINE'}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+
+        // Logs
+        lBody.innerHTML = allianceData.logs.map(l => `
+            <div class="log-item">
+                <span class="log-time">[${l.time}]</span>
+                <span class="log-msg">${l.msg}</span>
+            </div>
+        `).join('');
+    }
+
+    initAlliance();
+</script>
+
+</body>
+</html>
