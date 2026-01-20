@@ -1272,8 +1272,9 @@
             if(!container) return;
             container.innerHTML = '';
             game.buildings.filter(b => b.section === sectionId).forEach(b => {
-                const isBuilding = game.queue.some(q => q.id === b.id);
-                container.innerHTML += `<div class="build-card"><span class="lvl-badge">NIV ${b.lvl}</span><div class="build-img-container"></div><div class="build-card-content"><h4 style="color:var(--neon-blue);">${b.name}</h4><p class="lore-text">${b.lore}</p><button class="btn-upgrade" ${isBuilding ? 'disabled' : ''} onclick="addToQueue('${b.id}')">${isBuilding ? 'EN COLA...' : 'MEJORAR (' + b.cost + ' Fe)'}</button></div></div>`;
+                const isBuilding = false;
+                container.innerHTML += `<div class="build-card"><span class="lvl-badge">NIV ${b.lvl}</span><div class="build-img-container"></div><div class="build-card-content"><h4 style="color:var(--neon-blue);">${b.name}</h4><p class="lore-text">${b.lore}</p><button class="btn-upgrade" ${isBuilding ? 'disabled' : ''} onclick="mejorarEdificio('${mapBuildingId(b.id)}')"
+>${isBuilding ? 'EN COLA...' : 'MEJORAR (' + b.cost + ' Fe)'}</button></div></div>`;
             });
         }
 
@@ -1372,16 +1373,82 @@ async function syncBuildingsFromSupabase() {
   renderList('resources');
   renderList('research');
 }
+async function mejorarEdificio(buildingId) {
+  console.log("MEJORAR:", buildingId);
 
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) {
+    alert("Usuario no logueado");
+    return;
+  }
+
+  // 1️⃣ Buscar el edificio en Supabase
+  const { data: building, error } = await supabaseClient
+    .from('buildings')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('building_type', buildingId)
+    .single();
+
+  if (error || !building) {
+    alert("No se encontró el edificio en la BD");
+    console.error(error);
+    return;
+  }
+
+  if (building.is_upgrading) {
+    alert("Este edificio ya está en mejora");
+    return;
+  }
+
+  // 2️⃣ Duración fija SOLO para probar (5 minutos)
+  const now = new Date();
+  const end = new Date(now.getTime() + 5 * 60 * 1000);
+
+  // 3️⃣ Guardar en Supabase
+  const { error: updateError } = await supabaseClient
+    .from('buildings')
+    .update({
+      is_upgrading: true,
+      upgrade_start: now.toISOString(),
+      upgrade_end: end.toISOString()
+    })
+    .eq('id', building.id);
+
+  if (updateError) {
+    alert("Error al iniciar mejora");
+    console.error(updateError);
+    return;
+  }
+    renderList('resources');
+  renderList('research');
+
+  alert("✅ Mejora iniciada correctamente");
+}
 (async () => {
   await initBuildings();
   await syncBuildingsFromSupabase();
 })();
+    function mapBuildingId(gameId) {
+  const map = {
+    minaFe: 'mina_metal',
+    minaSi: 'mina_silicio',
+    minaH3: 'mina_deuterio',
+    plantaSolar: 'planta_solar',
+    lab: 'laboratorio',
+    astillero: 'astillero'
+  };
+  return map[gameId];
+}
+
 </script>
 
 
 </body>
 </html>
+
+
+
 
 
 
