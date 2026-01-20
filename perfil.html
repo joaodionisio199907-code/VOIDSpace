@@ -1313,37 +1313,76 @@
         initSelectors();
         showSection('overview');
     </script>
-    <script src="supabase-game-sync.js"></script>
+   
 <script>
 async function initBuildings() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
 
-  const tipos = ['mina_metal', 'mina_silicio', 'mina_deuterio'];
+  const tipos = [
+    { type: 'mina_metal', level: 1 },
+    { type: 'mina_silicio', level: 1 },
+    { type: 'mina_deuterio', level: 0 }
+  ];
 
-  for (const tipo of tipos) {
+  for (const t of tipos) {
     const { data } = await supabaseClient
       .from('buildings')
       .select('*')
       .eq('user_id', user.id)
-      .eq('building_type', tipo)
+      .eq('building_type', t.type)
       .single();
 
     if (!data) {
       await supabaseClient.from('buildings').insert({
         user_id: user.id,
-        building_type: tipo,
-        level: 1
+        building_type: t.type,
+        level: t.level
       });
     }
   }
 }
 
-initBuildings();
+async function syncBuildingsFromSupabase() {
+  const { data:{ user } } = await supabaseClient.auth.getUser();
+  if (!user) return;
+
+  const { data, error } = await supabaseClient
+    .from('buildings')
+    .select('*')
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  data.forEach(row => {
+    if (row.building_type === 'mina_metal') {
+      game.buildings.find(b => b.id === 'minaFe').lvl = row.level;
+    }
+    if (row.building_type === 'mina_silicio') {
+      game.buildings.find(b => b.id === 'minaSi').lvl = row.level;
+    }
+    if (row.building_type === 'mina_deuterio') {
+      game.buildings.find(b => b.id === 'minaH3').lvl = row.level;
+    }
+  });
+
+  renderList('resources');
+  renderList('research');
+}
+
+(async () => {
+  await initBuildings();
+  await syncBuildingsFromSupabase();
+})();
 </script>
+
 
 </body>
 </html>
+
 
 
 
