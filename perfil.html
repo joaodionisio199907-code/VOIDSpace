@@ -1098,7 +1098,7 @@
                 { id: "S-09", role: "ROL V: COMANDO", name: "Portanaves 'Colmena'", desc: "Base móvil para el transporte de interceptores.", hp: 80, atk: 40, def: 60, img: "" },
                 { id: "S-10", role: "ROL V: COMANDO", name: "Acorazado 'Dominus'", desc: "Nave insignia. Aumenta la precisión de la flota.", hp: 100, atk: 100, def: 90, img: "" }
             ],
-            queue: [],
+            
             map: { currentGalaxy: 1, currentSystem: 1, selectedPlanet: null }
         };
 
@@ -1278,176 +1278,205 @@
             });
         }
 
-        function addToQueue(buildingId) {
-            const b = game.buildings.find(item => item.id === buildingId);
-            if(game.resources.ferrum >= b.cost) {
-                game.resources.ferrum -= b.cost;
-                game.queue.push({ id: b.id, name: b.name, timeLeft: 5 });
-                renderList(b.section);
-            } else { alert("Recursos insuficientes"); }
-        }
 
-        setInterval(() => {
-            game.resources.ferrum += (game.buildings[0].lvl * 5 / 60);
-            game.resources.silice += (game.buildings[1].lvl * 2 / 60);
-            document.getElementById('res-ferrum').innerText = Math.floor(game.resources.ferrum).toLocaleString();
-            document.getElementById('res-silice').innerText = Math.floor(game.resources.silice).toLocaleString();
-            document.getElementById('res-h3').innerText = Math.floor(game.resources.h3).toLocaleString();
-
-            const queueEl = document.getElementById('active-queue');
-            if(game.queue.length > 0) {
-                queueEl.innerHTML = '';
-                game.queue.forEach((job, index) => {
-                    job.timeLeft -= 1;
-                    if(job.timeLeft <= 0) {
-                        const b = game.buildings.find(i => i.id === job.id);
-                        b.lvl++; b.cost = Math.floor(b.cost * 1.5);
-                        game.queue.splice(index, 1);
-                        renderList(b.section);
-                    } else {
-                        queueEl.innerHTML += `<div class="event-card"><span>${job.name}</span> <span class="timer">${job.timeLeft}s</span></div>`;
-                    }
-                });
-            } else { queueEl.innerHTML = '<p style="color:#444; font-size:0.8rem; text-align:center;">Cola vacía</p>'; }
-        }, 1000);
+        
 
         initSelectors();
         showSection('overview');
     </script>
    
 <script>
-async function initBuildings() {
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) return;
-
-  const tipos = [
-    { type: 'mina_metal', level: 1 },
-    { type: 'mina_silicio', level: 1 },
-    { type: 'mina_deuterio', level: 0 }
-  ];
-
-  for (const t of tipos) {
-    const { data } = await supabaseClient
-      .from('buildings')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('building_type', t.type)
-      .single();
-
-    if (!data) {
-      await supabaseClient.from('buildings').insert({
-        user_id: user.id,
-        building_type: t.type,
-        level: t.level
-      });
-    }
-  }
-}
-
-async function syncBuildingsFromSupabase() {
-  const { data:{ user } } = await supabaseClient.auth.getUser();
-  if (!user) return;
-
-  const { data, error } = await supabaseClient
-    .from('buildings')
-    .select('*')
-    .eq('user_id', user.id);
-
-  if (error) {
-    console.error(error);
-    return;
-  }
-
-  data.forEach(row => {
-    if (row.building_type === 'mina_metal') {
-      game.buildings.find(b => b.id === 'minaFe').lvl = row.level;
-    }
-    if (row.building_type === 'mina_silicio') {
-      game.buildings.find(b => b.id === 'minaSi').lvl = row.level;
-    }
-    if (row.building_type === 'mina_deuterio') {
-      game.buildings.find(b => b.id === 'minaH3').lvl = row.level;
-    }
-  });
-
-  renderList('resources');
-  renderList('research');
-}
-async function mejorarEdificio(buildingId) {
-  console.log("MEJORAR:", buildingId);
-
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) {
-    alert("Usuario no logueado");
-    return;
-  }
-
-  // 1️⃣ Buscar el edificio en Supabase
-  const { data: building, error } = await supabaseClient
-    .from('buildings')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('building_type', buildingId)
-    .single();
-
-  if (error || !building) {
-    alert("No se encontró el edificio en la BD");
-    console.error(error);
-    return;
-  }
-
-  if (building.is_upgrading) {
-    alert("Este edificio ya está en mejora");
-    return;
-  }
-
-  // 2️⃣ Duración fija SOLO para probar (5 minutos)
-  const now = new Date();
-  const end = new Date(now.getTime() + 5 * 60 * 1000);
-
-  // 3️⃣ Guardar en Supabase
-  const { error: updateError } = await supabaseClient
-    .from('buildings')
-    .update({
-      is_upgrading: true,
-      upgrade_start: now.toISOString(),
-      upgrade_end: end.toISOString()
-    })
-    .eq('id', building.id);
-
-  if (updateError) {
-    alert("Error al iniciar mejora");
-    console.error(updateError);
-    return;
-  }
-    renderList('resources');
-  renderList('research');
-
-  alert("✅ Mejora iniciada correctamente");
-}
-(async () => {
-  await initBuildings();
-  await syncBuildingsFromSupabase();
-})();
-    function mapBuildingId(gameId) {
-  const map = {
+// --- CONFIGURACIÓN Y MAPEO ---
+const mapBuildingIdInv = {
     minaFe: 'mina_metal',
     minaSi: 'mina_silicio',
     minaH3: 'mina_deuterio',
     plantaSolar: 'planta_solar',
     lab: 'laboratorio',
     astillero: 'astillero'
-  };
-  return map[gameId];
+};
+
+function mapBuildingId(gameId) {
+    return mapBuildingIdInv[gameId] || gameId;
 }
 
+let dbBuildingsCache = []; 
+
+// --- FUNCIONES DE BASE DE DATOS ---
+
+async function initBuildings() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const tipos = [
+        { type: 'mina_metal', level: 1 },
+        { type: 'mina_silicio', level: 1 },
+        { type: 'mina_deuterio', level: 0 },
+        { type: 'planta_solar', level: 1 },
+        { type: 'laboratorio', level: 0 },
+        { type: 'astillero', level: 0 }
+    ];
+
+    for (const t of tipos) {
+        const { data } = await supabaseClient
+            .from('buildings')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('building_type', t.type)
+            .single();
+
+        if (!data) {
+            await supabaseClient.from('buildings').insert({
+                user_id: user.id,
+                building_type: t.type,
+                level: t.level,
+                is_upgrading: false
+            });
+        }
+    }
+}
+
+async function syncBuildingsFromSupabase() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabaseClient
+        .from('buildings')
+        .select('*')
+        .eq('user_id', user.id);
+
+    if (error) return;
+
+    dbBuildingsCache = data;
+
+    data.forEach(row => {
+        const bId = Object.keys(mapBuildingIdInv).find(key => mapBuildingIdInv[key] === row.building_type);
+        const building = game.buildings.find(b => b.id === bId);
+        if (building) {
+            building.lvl = row.level;
+        }
+    });
+
+    renderList('resources');
+    renderList('research');
+}
+
+// --- LÓGICA DE INTERFAZ ---
+
+function renderList(sectionId) {
+    const container = document.getElementById(sectionId + '-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    game.buildings.filter(b => b.section === sectionId).forEach(b => {
+        const dbStatus = dbBuildingsCache.find(db => db.building_type === mapBuildingId(b.id));
+        
+        const ahora = new Date();
+        const finMejora = dbStatus?.upgrade_end ? new Date(dbStatus.upgrade_end) : null;
+        // Solo está mejorando si el tiempo de fin es mayor al actual
+        const estaMejorandoActivamente = dbStatus?.is_upgrading && finMejora && finMejora > ahora;
+
+        container.innerHTML += `
+            <div class="build-card">
+                <span class="lvl-badge">NIV ${b.lvl}</span>
+                <div class="build-img-container">
+                    ${b.img ? `<img src="${b.img}" alt="${b.name}">` : ''}
+                </div>
+                <div class="build-card-content">
+                    <h4 style="color:var(--neon-blue);">${b.name}</h4>
+                    <p class="lore-text">${b.lore}</p>
+                    <button class="btn-upgrade" 
+                        ${estaMejorandoActivamente ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} 
+                        onclick="mejorarEdificio('${mapBuildingId(b.id)}')">
+                        ${estaMejorandoActivamente ? 'EN MEJORA...' : 'MEJORAR (' + b.cost + ' Fe)'}
+                    </button>
+                </div>
+            </div>`;
+    });
+}
+
+// --- ACCIONES ---
+
+async function mejorarEdificio(buildingId) {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const { data: building } = await supabaseClient
+        .from('buildings')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('building_type', buildingId)
+        .single();
+
+    if (!building) return;
+
+    const ahora = new Date();
+    const finMejora = building.upgrade_end ? new Date(building.upgrade_end) : null;
+
+    // Validación corregida: permite mejorar si el tiempo ya pasó aunque diga TRUE
+    if (building.is_upgrading && finMejora && finMejora > ahora) {
+        alert("Este edificio ya se está mejorando.");
+        return;
+    }
+
+    const upgradeEnd = new Date(ahora.getTime() + 5 * 60 * 1000);
+
+    const { error } = await supabaseClient
+        .from('buildings')
+        .update({
+            is_upgrading: true,
+            upgrade_start: ahora.toISOString(),
+            upgrade_end: upgradeEnd.toISOString()
+        })
+        .eq('id', building.id);
+
+    if (error) {
+        alert("Error al iniciar mejora");
+    } else {
+        await syncBuildingsFromSupabase();
+    }
+}
+
+async function finalizarMejoras() {
+    const ahora = new Date().toISOString();
+    
+    const { data: terminados } = await supabaseClient
+        .from('buildings')
+        .select('*')
+        .eq('is_upgrading', true)
+        .lte('upgrade_end', ahora);
+
+    if (terminados && terminados.length > 0) {
+        for (const b of terminados) {
+            await supabaseClient
+                .from('buildings')
+                .update({
+                    level: b.level + 1,
+                    is_upgrading: false,
+                    upgrade_start: null,
+                    upgrade_end: null
+                })
+                .eq('id', b.id);
+        }
+        await syncBuildingsFromSupabase();
+    }
+}
+
+// --- INICIALIZACIÓN ---
+(async () => {
+    initSelectors();
+    showSection('overview');
+    await initBuildings();
+    await syncBuildingsFromSupabase();
+    
+    // Bucle de comprobación
+    setInterval(finalizarMejoras, 10000);
+})();
 </script>
 
 
 </body>
 </html>
-
-
 
 
 
