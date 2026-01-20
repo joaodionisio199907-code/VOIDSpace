@@ -1286,7 +1286,7 @@
     </script>
    
 <script>
-// --- CONFIGURACIÓN Y MAPEO ---
+// --- CONFIGURACIÓN Y FÓRMULAS ---
 const mapBuildingIdInv = {
     minaFe: 'mina_metal',
     minaSi: 'mina_silicio',
@@ -1296,72 +1296,40 @@ const mapBuildingIdInv = {
     astillero: 'astillero'
 };
 
-function mapBuildingId(gameId) {
-    return mapBuildingIdInv[gameId] || gameId;
-}
+function mapBuildingId(gameId) { return mapBuildingIdInv[gameId] || gameId; }
+
+// FÓRMULAS ESCALABLES
+// Coste base 500, aumenta un 60% por nivel
+const getUpgradeCost = (level) => Math.floor(500 * Math.pow(1.6, level - 1));
+
+// Tiempo base 5 min, se duplica cada nivel (en milisegundos)
+const getUpgradeTime = (level) => {
+    const minutosBase = 5 * Math.pow(2, level - 1);
+    return minutosBase * 60 * 1000; 
+};
 
 let dbBuildingsCache = []; 
 
-// --- FUNCIONES DE BASE DE DATOS ---
-
-async function initBuildings() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
-
-    const tipos = [
-        { type: 'mina_metal', level: 1 },
-        { type: 'mina_silicio', level: 1 },
-        { type: 'mina_deuterio', level: 0 },
-        { type: 'planta_solar', level: 1 },
-        { type: 'laboratorio', level: 0 },
-        { type: 'astillero', level: 0 }
-    ];
-
-    for (const t of tipos) {
-        const { data } = await supabaseClient
-            .from('buildings')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('building_type', t.type)
-            .single();
-
-        if (!data) {
-            await supabaseClient.from('buildings').insert({
-                user_id: user.id,
-                building_type: t.type,
-                level: t.level,
-                is_upgrading: false
-            });
-        }
-    }
-}
+// --- BASE DE DATOS ---
 
 async function syncBuildingsFromSupabase() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabaseClient
-        .from('buildings')
-        .select('*')
-        .eq('user_id', user.id);
-
-    if (error) return;
-
-    dbBuildingsCache = data;
-
-    data.forEach(row => {
-        const bId = Object.keys(mapBuildingIdInv).find(key => mapBuildingIdInv[key] === row.building_type);
-        const building = game.buildings.find(b => b.id === bId);
-        if (building) {
-            building.lvl = row.level;
-        }
-    });
-
-    renderList('resources');
-    renderList('research');
+    const { data } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
+    if (data) {
+        dbBuildingsCache = data;
+        data.forEach(row => {
+            const bId = Object.keys(mapBuildingIdInv).find(key => mapBuildingIdInv[key] === row.building_type);
+            const building = game.buildings.find(b => b.id === bId);
+            if (building) building.lvl = row.level;
+        });
+        renderList('resources');
+        renderList('research');
+    }
 }
 
-// --- LÓGICA DE INTERFAZ ---
+// --- INTERFAZ Y CONTADOR REAL-TIME ---
 
 function renderList(sectionId) {
     const container = document.getElementById(sectionId + '-list');
@@ -1370,12 +1338,8 @@ function renderList(sectionId) {
 
     game.buildings.filter(b => b.section === sectionId).forEach(b => {
         const dbStatus = dbBuildingsCache.find(db => db.building_type === mapBuildingId(b.id));
+        const currentCost = getUpgradeCost(b.lvl);
         
-        const ahora = new Date();
-        const finMejora = dbStatus?.upgrade_end ? new Date(dbStatus.upgrade_end) : null;
-        // Solo está mejorando si el tiempo de fin es mayor al actual
-        const estaMejorandoActivamente = dbStatus?.is_upgrading && finMejora && finMejora > ahora;
-
         container.innerHTML += `
             <div class="build-card">
                 <span class="lvl-badge">NIV ${b.lvl}</span>
@@ -1385,13 +1349,49 @@ function renderList(sectionId) {
                 <div class="build-card-content">
                     <h4 style="color:var(--neon-blue);">${b.name}</h4>
                     <p class="lore-text">${b.lore}</p>
-                    <button class="btn-upgrade" 
-                        ${estaMejorandoActivamente ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} 
+                    <button id="btn-${mapBuildingId(b.id)}" class="btn-upgrade" 
                         onclick="mejorarEdificio('${mapBuildingId(b.id)}')">
-                        ${estaMejorandoActivamente ? 'EN MEJORA...' : 'MEJORAR (' + b.cost + ' Fe)'}
+                        Cargando...
                     </button>
+                    <div style="margin-top:10px; font-size:0.85em; color:#00f2ff;">
+                        Coste: ${currentCost} Fe | Tiempo: ${Math.floor(getUpgradeTime(b.lvl)/60000)}m
+                    </div>
                 </div>
             </div>`;
+    });
+    // Forzamos actualización inmediata de los textos de los botones
+    updateButtonsPeriodically();
+}
+
+function updateButtonsPeriodically() {
+    dbBuildingsCache.forEach(dbStatus => {
+        const btn = document.getElementById(`btn-${dbStatus.building_type}`);
+        if (!btn) return;
+
+        const ahora = new Date();
+        const finMejora = dbStatus.upgrade_end ? new Date(dbStatus.upgrade_end) : null;
+
+        if (dbStatus.is_upgrading && finMejora && finMejora > ahora) {
+            const diff = finMejora - ahora;
+            const horas = Math.floor(diff / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            let tiempoTexto = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            if(horas > 0) tiempoTexto = `${horas}h ${tiempoTexto}`;
+
+            btn.innerText = `QUEDAN ${tiempoTexto}`;
+            btn.disabled = true;
+            btn.style.filter = "grayscale(1)";
+            btn.style.cursor = "wait";
+        } else {
+            const bId = Object.keys(mapBuildingIdInv).find(key => mapBuildingIdInv[key] === dbStatus.building_type);
+            const building = game.buildings.find(b => b.id === bId);
+            btn.innerText = `MEJORAR AL NIV ${building.lvl + 1}`;
+            btn.disabled = false;
+            btn.style.filter = "none";
+            btn.style.cursor = "pointer";
+        }
     });
 }
 
@@ -1399,47 +1399,32 @@ function renderList(sectionId) {
 
 async function mejorarEdificio(buildingId) {
     const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
+    const building = dbBuildingsCache.find(b => b.building_type === buildingId);
+    
+    if (!user || !building) return;
 
-    const { data: building } = await supabaseClient
-        .from('buildings')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('building_type', buildingId)
-        .single();
-
-    if (!building) return;
-
-    const ahora = new Date();
-    const finMejora = building.upgrade_end ? new Date(building.upgrade_end) : null;
-
-    // Validación corregida: permite mejorar si el tiempo ya pasó aunque diga TRUE
-    if (building.is_upgrading && finMejora && finMejora > ahora) {
-        alert("Este edificio ya se está mejorando.");
-        return;
-    }
-
-    const upgradeEnd = new Date(ahora.getTime() + 5 * 60 * 1000);
+    // Calculamos tiempo basado en el nivel actual
+    const upgradeDuration = getUpgradeTime(building.level);
+    const upgradeEnd = new Date(new Date().getTime() + upgradeDuration);
 
     const { error } = await supabaseClient
         .from('buildings')
         .update({
             is_upgrading: true,
-            upgrade_start: ahora.toISOString(),
+            upgrade_start: new Date().toISOString(),
             upgrade_end: upgradeEnd.toISOString()
         })
         .eq('id', building.id);
 
-    if (error) {
-        alert("Error al iniciar mejora");
-    } else {
+    if (!error) {
         await syncBuildingsFromSupabase();
+    } else {
+        alert("Error de conexión con la base de datos.");
     }
 }
 
 async function finalizarMejoras() {
     const ahora = new Date().toISOString();
-    
     const { data: terminados } = await supabaseClient
         .from('buildings')
         .select('*')
@@ -1448,15 +1433,12 @@ async function finalizarMejoras() {
 
     if (terminados && terminados.length > 0) {
         for (const b of terminados) {
-            await supabaseClient
-                .from('buildings')
-                .update({
-                    level: b.level + 1,
-                    is_upgrading: false,
-                    upgrade_start: null,
-                    upgrade_end: null
-                })
-                .eq('id', b.id);
+            await supabaseClient.from('buildings').update({
+                level: b.level + 1,
+                is_upgrading: false,
+                upgrade_start: null,
+                upgrade_end: null
+            }).eq('id', b.id);
         }
         await syncBuildingsFromSupabase();
     }
@@ -1466,17 +1448,20 @@ async function finalizarMejoras() {
 (async () => {
     initSelectors();
     showSection('overview');
-    await initBuildings();
     await syncBuildingsFromSupabase();
     
-    // Bucle de comprobación
-    setInterval(finalizarMejoras, 10000);
+    // El contador visual se actualiza cada 1 segundo para el efecto de reloj
+    setInterval(updateButtonsPeriodically, 1000); 
+    // La base de datos se comprueba cada 5 segundos
+    setInterval(finalizarMejoras, 5000);
 })();
 </script>
 
 
 </body>
 </html>
+
+
 
 
 
