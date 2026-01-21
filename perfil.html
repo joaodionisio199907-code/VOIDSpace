@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID ECHOS</title>
+    <title>VOID ECHOS | Comando Central</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script>
-        // --- CONFIGURACIÓN SUPABASE ---
+        // CONFIGURACIÓN SUPABASE
         const SUPABASE_URL = 'https://ojytjhamrmmuaoeflmrh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_oRK9yB9kg3o-x28YP0F9Jw_izkkkEtz';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- SISTEMA ANTI-CHEAT INTEGRADO ---
+        // INTEGRACIÓN DE FUNCIONES FALTANTES (Para evitar errores 404)
         const AntiCheat = {
-            isValidAmount: (amount) => !isNaN(amount) && amount >= 0,
-            init: () => console.log("🛡️ Escudos Anti-Cheat Activos")
+            isValidAmount: (amount) => amount !== null && !isNaN(amount) && amount >= 0,
+            init: () => console.log("🛡️ Escudos activos")
         };
 
         async function validarAcceso() {
@@ -24,43 +23,64 @@
         }
         validarAcceso();
     </script>
-
+    
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        :root { --neon-blue: #00f2ff; --neon-purple: #bc13fe; --dark-bg: #0a0b10; --card-bg: rgba(16, 18, 27, 0.9); }
-        body { background-color: var(--dark-bg); color: white; font-family: 'Share Tech Mono', monospace; margin: 0; }
+        :root { 
+            --neon-blue: #00f2ff; 
+            --neon-purple: #bc13fe; 
+            --dark-bg: #0a0b10; 
+            --card-bg: rgba(16, 18, 27, 0.9); 
+        }
+        body { 
+            background-color: var(--dark-bg); 
+            color: white; 
+            font-family: 'Share Tech Mono', monospace; 
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); 
+            background-attachment: fixed; 
+            margin: 0;
+        }
         .main-container { display: flex; min-height: 100vh; padding: 20px; gap: 20px; }
-        .sidebar { width: 250px; background: var(--card-bg); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 20px; }
+        .sidebar { width: 250px; background: var(--card-bg); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; height: calc(100vh - 40px); position: sticky; top: 20px; }
         .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; }
-        .top-bar { background: rgba(10, 11, 16, 0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 15px; display: flex; justify-content: space-around; }
-        .nav-btn { background: transparent; border: 1px solid rgba(0,242,255,0.1); color: white; padding: 12px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; width: 100%; font-family: 'Orbitron'; }
+        .top-bar { background: rgba(10, 11, 16, 0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 15px; display: flex; justify-content: space-around; position: sticky; top: 0; z-index: 100; }
+        
+        .nav-btn { background: transparent; border: 1px solid rgba(0,242,255,0.1); color: white; padding: 12px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; font-family: 'Orbitron'; text-align: left; transition: 0.3s; width: 100%; }
         .nav-btn.active { border-color: var(--neon-blue); background: rgba(0,242,255,0.1); }
+        
         .game-section { display: none; }
         .game-section.active { display: block; }
-        .building-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        
-        /* Animación Resta */
-        .recurso-resta { position: fixed; color: #ff4444; font-weight: bold; font-family: 'Orbitron'; font-size: 1.2rem; pointer-events: none; animation: flotarResta 1.5s ease-out forwards; z-index: 9999; }
-        @keyframes flotarResta { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-50px); } }
 
-        /* Hangar y Cola */
+        /* Estilos de las tarjetas originales */
+        .building-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .ship-card { background: rgba(20, 22, 30, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; position: relative; }
+        .ship-img-container { position: relative; height: 160px; background: #000; }
+        .ship-img { width: 100%; height: 100%; object-fit: cover; }
+        .scan-effect { position: absolute; width: 100%; height: 2px; background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); animation: scanLine 3s infinite linear; }
+        @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
+        .ship-info { padding: 15px; }
+
+        /* Cola y Hangar */
         .shipyard-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
-        .ship-card { background: var(--card-bg); border: 1px solid #333; padding: 15px; border-radius: 10px; }
-        .queue-container { background: var(--card-bg); border: 1px solid var(--neon-purple); padding: 15px; border-radius: 10px; }
-        .queue-item { background: rgba(255,255,255,0.05); padding: 10px; margin-bottom: 10px; border-radius: 5px; border-left: 3px solid var(--neon-purple); }
-        .hangar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 10px; }
-        .hangar-item { background: #111; padding: 10px; border-radius: 5px; text-align: center; border: 1px solid #222; }
+        .queue-container { background: var(--card-bg); border: 1px solid var(--neon-purple); padding: 15px; border-radius: 15px; }
+        .queue-item { background: rgba(255,255,255,0.03); margin-bottom: 10px; padding: 12px; border-left: 3px solid var(--neon-purple); border-radius: 4px; }
+        .hangar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-top: 15px; }
+        .hangar-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
+
+        /* Animación de resta roja */
+        .recurso-resta { position: fixed; color: #ff4444; font-weight: bold; font-family: 'Orbitron'; animation: flotarResta 1.5s ease-out forwards; z-index: 1000; pointer-events: none; }
+        @keyframes flotarResta { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-40px); } }
     </style>
 </head>
 <body>
 
     <div class="main-container">
         <div class="sidebar">
-            <h2 style="font-family:'Orbitron'; color:var(--neon-blue); text-align:center;">VOID ECHOS</h2>
-            <button class="nav-btn active" onclick="showSection('resources')">RECURSOS</button>
-            <button class="nav-btn" onclick="showSection('fleet')">ASTILLERO</button>
+            <h2 style="font-family:'Orbitron'; color:var(--neon-blue); text-align:center; margin-bottom:20px;">VOID ECHOS</h2>
+            <button class="nav-btn active" onclick="showSection('resources')"><i class="fas fa-microchip"></i> RECURSOS</button>
+            <button class="nav-btn" onclick="showSection('fleet')"><i class="fas fa-rocket"></i> ASTILLERO</button>
         </div>
 
         <div class="content-area">
@@ -71,21 +91,22 @@
 
             <div id="sec-resources" class="game-section active">
                 <div class="building-grid" id="resources-list">
-                    <p>Usa la sección ASTILLERO para probar las naves.</p>
-                </div>
+                    </div>
             </div>
 
             <div id="sec-fleet" class="game-section">
                 <div class="shipyard-layout">
                     <div>
                         <div class="building-grid" id="fleet-list-container"></div>
-                        <div style="margin-top:20px;">
-                            <h3 style="font-family:Orbitron; color:var(--neon-blue);">HANGAR</h3>
+                        <div class="hangar-section">
+                            <h3 style="font-family:Orbitron; color:var(--neon-blue); margin-top:30px;">
+                                <i class="fas fa-warehouse"></i> HANGAR DE LA FLOTA
+                            </h3>
                             <div id="hangar-grid" class="hangar-grid"></div>
                         </div>
                     </div>
                     <div class="queue-container">
-                        <h3 style="font-family:Orbitron; font-size:0.8rem; color:var(--neon-purple);">COLA DE PRODUCCIÓN</h3>
+                        <h3 style="font-family:'Orbitron'; font-size:0.8rem; color:var(--neon-purple);">COLA DE PRODUCCIÓN</h3>
                         <div id="ship-queue-list"></div>
                     </div>
                 </div>
@@ -94,25 +115,25 @@
     </div>
 
     <script>
-        // --- VARIABLES ---
+        // --- ESTADO Y VARIABLES ---
         const NAVES_DISPONIBLES = [
-            { id: 'cazador_l', name: 'CAZADOR LIGERO', metal: 3000, silicio: 1000, time: 15 },
-            { id: 'carguero_p', name: 'CARGUERO PEQUEÑO', metal: 2000, silicio: 2000, time: 25 }
+            { id: 'cazador_l', name: 'CAZADOR LIGERO', metal: 3000, silicio: 1000, time: 15, img: 'img/ships/interceptorarpía/interceptorarpía.png' },
+            { id: 'carguero_p', name: 'CARGUERO PEQUEÑO', metal: 2000, silicio: 2000, time: 25, img: 'img/ships/interceptorarpía/johnscargo1.png' }
         ];
 
         let userResources = { metal: 0, silicio: 0 };
         let shipQueue = [];
         let shipTimerInterval = null;
 
-        // --- ACTUALIZACIÓN DE INTERFAZ ---
+        // --- FUNCIONES DE UI ---
         function actualizarInterfazRecursos() {
             document.getElementById('res-metal').innerText = Math.floor(userResources.metal);
             document.getElementById('res-silice').innerText = Math.floor(userResources.silicio);
         }
 
-        function animarResta(idElemento, cantidad) {
-            const el = document.getElementById(idElemento);
-            const rect = el.getBoundingClientRect();
+        function animarResta(idPadre, cantidad) {
+            const padre = document.getElementById(idPadre);
+            const rect = padre.getBoundingClientRect();
             const anima = document.createElement('div');
             anima.className = 'recurso-resta';
             anima.innerText = `-${cantidad}`;
@@ -122,22 +143,30 @@
             setTimeout(() => anima.remove(), 1500);
         }
 
-        // --- NAVEGACIÓN ---
         function showSection(id) {
             document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('sec-' + id).classList.add('active');
             if(id === 'fleet') { renderAstillero(); loadHangar(); syncShipQueueFromDB(); }
         }
 
-        // --- LÓGICA DE NAVES ---
+        // --- LÓGICA ASTILLERO ---
         function renderAstillero() {
             const container = document.getElementById('fleet-list-container');
             container.innerHTML = NAVES_DISPONIBLES.map(ship => `
                 <div class="ship-card">
-                    <h4>${ship.name}</h4>
-                    <p>Coste: ${ship.metal} M / ${ship.silicio} S</p>
-                    <input type="number" id="qty-${ship.id}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid #444;">
-                    <button class="nav-btn" onclick="ordenarNave('${ship.id}')">CONSTRUIR</button>
+                    <div class="ship-img-container">
+                        <div class="scan-effect"></div>
+                        <img src="${ship.img}" class="ship-img" onerror="this.src='https://via.placeholder.com/150/000?text=NAVE'">
+                    </div>
+                    <div class="ship-info">
+                        <h4 style="color:var(--neon-blue); font-family:Orbitron;">${ship.name}</h4>
+                        <p style="font-size:0.8rem; opacity:0.7;">M: ${ship.metal} | S: ${ship.silicio}</p>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <input type="number" id="qty-${ship.id}" value="1" min="1" style="width:50px; background:#000; border:1px solid #333; color:#fff;">
+                            <button class="nav-btn" onclick="ordenarNave('${ship.id}')" style="padding:5px; font-size:0.7rem;">CONSTRUIR</button>
+                        </div>
+                    </div>
                 </div>
             `).join('');
         }
@@ -150,23 +179,22 @@
 
             if (userResources.metal >= costM && userResources.silicio >= costS) {
                 const { data: { user } } = await supabaseClient.auth.getUser();
-
-                // 1. Restar en DB
+                
+                // Actualización instantánea visual y en DB
                 const { error } = await supabaseClient.from('players').update({
                     metal: userResources.metal - costM,
                     silicio: userResources.silicio - costS
                 }).eq('id', user.id);
 
-                if (error) return alert("Error al conectar con DB");
+                if (error) return;
 
-                // 2. Efecto visual instantáneo
                 animarResta('cont-metal', costM);
                 animarResta('cont-silice', costS);
                 userResources.metal -= costM;
                 userResources.silicio -= costS;
                 actualizarInterfazRecursos();
 
-                // 3. Añadir a cola en DB
+                // Lógica de cola
                 let baseTime = new Date();
                 if (shipQueue.length > 0) baseTime = new Date(shipQueue[shipQueue.length-1].finish_at);
                 const finishAt = new Date(baseTime.getTime() + (ship.time * qty * 1000)).toISOString();
@@ -176,16 +204,12 @@
                 }]);
 
                 syncShipQueueFromDB();
-            } else {
-                alert("Recursos insuficientes");
-            }
+            } else { alert("Recursos insuficientes"); }
         }
 
         async function syncShipQueueFromDB() {
             const { data: { user } } = await supabaseClient.auth.getUser();
-            const { data } = await supabaseClient.from('ship_queue')
-                .select('*').eq('user_id', user.id).order('finish_at', { ascending: true });
-            
+            const { data } = await supabaseClient.from('ship_queue').select('*').eq('user_id', user.id).order('finish_at', { ascending: true });
             shipQueue = data || [];
             updateShipQueueUI();
             if (shipQueue.length > 0 && !shipTimerInterval) processShipQueue();
@@ -194,35 +218,31 @@
         function updateShipQueueUI() {
             const container = document.getElementById('ship-queue-list');
             if (shipQueue.length === 0) {
-                container.innerHTML = "<p style='opacity:0.3; font-size:0.7rem;'>Sin actividad</p>";
+                container.innerHTML = "<p style='opacity:0.3; font-size:0.8rem;'>Astillero libre.</p>";
                 return;
             }
             container.innerHTML = shipQueue.map((q, i) => `
                 <div class="queue-item">
-                    <b>${q.quantity}x ${q.ship_id}</b><br>
-                    <small id="timer-${q.id}">${i === 0 ? 'Procesando...' : 'En espera'}</small>
+                    <div style="font-size:0.8rem;">${q.quantity}x ${q.ship_id}</div>
+                    <small id="timer-${q.id}" style="color:var(--neon-blue);">${i === 0 ? 'Iniciando...' : 'En espera'}</small>
                 </div>
             `).join('');
         }
 
         function processShipQueue() {
             if (shipQueue.length === 0) return;
-            
             shipTimerInterval = setInterval(async () => {
                 const current = shipQueue[0];
                 const restante = Math.floor((new Date(current.finish_at) - new Date()) / 1000);
                 
                 const timerEl = document.getElementById(`timer-${current.id}`);
-                if (timerEl) timerEl.innerText = `Finaliza en: ${restante}s`;
+                if (timerEl) timerEl.innerText = `${restante}s restantes`;
 
                 if (restante <= 0) {
                     clearInterval(shipTimerInterval);
                     shipTimerInterval = null;
-                    
-                    // Finalizar construcción
                     await registrarNaveEnBD(current.ship_id, current.quantity);
                     await supabaseClient.from('ship_queue').delete().eq('id', current.id);
-                    
                     syncShipQueueFromDB();
                     loadHangar();
                 }
@@ -231,9 +251,7 @@
 
         async function registrarNaveEnBD(shipId, quantity) {
             const { data: { user } } = await supabaseClient.auth.getUser();
-            const { data: existing } = await supabaseClient.from('user_fleet')
-                .select('*').eq('user_id', user.id).eq('ship_id', shipId).single();
-            
+            const { data: existing } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id).eq('ship_id', shipId).single();
             if (existing) {
                 await supabaseClient.from('user_fleet').update({ quantity: existing.quantity + quantity }).eq('id', existing.id);
             } else {
@@ -246,10 +264,10 @@
             const { data: fleet } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id);
             const container = document.getElementById('hangar-grid');
             if (!fleet || fleet.length === 0) {
-                container.innerHTML = "Vacío";
+                container.innerHTML = "<p style='opacity:0.3;'>Hangar vacío.</p>";
                 return;
             }
-            container.innerHTML = fleet.map(f => `<div class="hangar-item"><b>${f.ship_id}</b><br>${f.quantity}</div>`).join('');
+            container.innerHTML = fleet.map(f => `<div class="hangar-item"><b style="color:var(--neon-blue); font-size:0.7rem;">${f.ship_id}</b><br><span>${f.quantity}</span></div>`).join('');
         }
 
         async function actualizarRecursosDesdeBD() {
@@ -264,11 +282,9 @@
 
         // --- INICIO ---
         (async () => {
-            AntiCheat.init();
             await actualizarRecursosDesdeBD();
             setInterval(actualizarRecursosDesdeBD, 10000);
         })();
     </script>
 </body>
 </html>
-
