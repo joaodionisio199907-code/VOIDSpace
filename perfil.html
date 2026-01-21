@@ -1420,23 +1420,41 @@ async function mejorarEdificio(buildingId) {
     
     if (!user || !building) return;
 
-    const coste = getUpgradeCost(building.level);
+    // Calculamos los costes según el nivel (puedes ajustar si el silicio/deuterio cuestan distinto)
+    const costeMetal = getUpgradeCost(building.level);
+    const costeSilicio = Math.floor(costeMetal * 0.6); // Ejemplo: el silicio cuesta el 60% del metal
+    const costeDeuterio = Math.floor(costeMetal * 0.3); // Ejemplo: el deuterio el 30%
 
-    if (userResources.metal < coste) {
-        alert("⚠️ No tienes suficiente metal (Necesitas " + coste + ")");
+    // --- VALIDACIÓN DE SEGURIDAD ---
+    if (userResources.metal < costeMetal || 
+        userResources.silicio < costeSilicio || 
+        userResources.deuterio < costeDeuterio) {
+        
+        alert(`⚠️ Recursos insuficientes. Necesitas:\n` +
+              `Metal: ${costeMetal} (Tienes: ${Math.floor(userResources.metal)})\n` +
+              `Sílice: ${costeSilicio} (Tienes: ${Math.floor(userResources.silicio)})\n` +
+              `H3: ${costeDeuterio} (Tienes: ${Math.floor(userResources.deuterio)})`);
+        return; // Detenemos la función aquí si no tiene dinero
+    }
+
+    // --- COBRO DE RECURSOS EN SUPABASE ---
+    const { error: resError } = await supabaseClient
+        .from('profiles')
+        .update({ 
+            metal: userResources.metal - costeMetal,
+            silicio: userResources.silicio - costeSilicio,
+            deuterio: userResources.deuterio - costeDeuterio
+        })
+        .eq('id', user.id);
+
+    if (resError) {
+        alert("Error al procesar el pago en la base de datos.");
         return;
     }
 
-    // 1. Restar recursos en la BD
-    const { error: resError } = await supabaseClient
-        .from('profiles')
-        .update({ metal: userResources.metal - coste })
-        .eq('id', user.id);
-
-    if (resError) return;
-
-    // 2. Iniciar tiempo de mejora
-    const upgradeEnd = new Date(Date.now() + getUpgradeTime(building.level));
+    // --- INICIAR MEJORA (TIEMPO) ---
+    const upgradeDuration = getUpgradeTime(building.level);
+    const upgradeEnd = new Date(Date.now() + upgradeDuration);
 
     const { error: upgradeError } = await supabaseClient
         .from('buildings')
@@ -1448,11 +1466,11 @@ async function mejorarEdificio(buildingId) {
         .eq('id', building.id);
 
     if (!upgradeError) {
+        // Actualizamos la UI inmediatamente
         await actualizarRecursosDesdeBD();
         await syncBuildingsFromSupabase();
     }
 }
-
 async function finalizarMejoras() {
     const ahora = new Date().toISOString();
     const { data: terminados } = await supabaseClient
@@ -1485,6 +1503,7 @@ async function finalizarMejoras() {
 
 </body>
 </html>
+
 
 
 
