@@ -1310,6 +1310,7 @@ async function actualizarRecursosDesdeBD() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
 
+    // Leemos las columnas reales de Supabase: metal, silicio, deuterio
     const { data: profile } = await supabaseClient
         .from('profiles')
         .select('metal, silicio, deuterio')
@@ -1317,12 +1318,12 @@ async function actualizarRecursosDesdeBD() {
         .single();
 
     if (profile) {
-        // Guardamos los datos en nuestra variable local para que el juego sepa cuánto tenemos
+        // Guardamos los valores reales en nuestra variable global
         userResources.metal = profile.metal;
         userResources.silicio = profile.silicio;
         userResources.deuterio = profile.deuterio;
 
-        // "INYECTAMOS" los valores en tu HTML usando tus IDs
+        // Actualizamos tus IDs específicos del HTML
         const elFerrum = document.getElementById('res-ferrum');
         if(elFerrum) elFerrum.innerText = Math.floor(userResources.metal).toLocaleString();
         
@@ -1503,6 +1504,7 @@ async function finalizarMejoras() {
 
 </body>
 </html>
+
 
 
 
