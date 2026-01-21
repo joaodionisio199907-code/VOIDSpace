@@ -262,21 +262,33 @@ async function ordenarNave(id) {
     const qty = parseInt(document.getElementById(`qty-${id}`).value);
     const { data: { user } } = await supabaseClient.auth.getUser();
 
-    // Obtenemos recursos actuales (asumiendo que userResources está en game.js)
     const costM = ship.metal * qty;
     const costS = ship.silicio * qty;
 
     if (userResources.metal >= costM && userResources.silicio >= costS) {
-        // Descontar en BD
+        // 1. Descontar en BD
         await supabaseClient.from('players').update({
             metal: userResources.metal - costM,
             silicio: userResources.silicio - costS
         }).eq('id', user.id);
 
-        shipQueue.push({ ...ship, uid: Date.now(), qty, timeLeft: ship.time });
+        // 2. CREAR EL OBJETO CON LOS COSTOS (Lo que me preguntaste)
+        const newOrder = { 
+            ...ship, 
+            uid: Date.now(), 
+            qty: qty, 
+            timeLeft: ship.time,
+            costMetal: costM,     // Guardamos esto para el reembolso
+            costSilicio: costS    // Guardamos esto para el reembolso
+        };
+
+        // 3. Meter a la cola
+        shipQueue.push(newOrder);
         
         if (typeof actualizarRecursosDesdeBD === "function") actualizarRecursosDesdeBD();
         updateShipQueueUI();
+        
+        // 4. Si el astillero estaba libre, empezar a fabricar
         if (shipQueue.length === 1) processShipQueue();
     } else {
         alert("Recursos insuficientes para esta flota.");
@@ -362,6 +374,7 @@ async function registrarNaveEnBD(shipId) {
 </html>
 </body>
 </html>
+
 
 
 
