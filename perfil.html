@@ -163,47 +163,80 @@
 
     <script>
         // --- LOGICA DEL CHAT ---
+       // --- LOGICA DEL CHAT ---
         function toggleChat() {
             const win = document.getElementById('chat-window');
             win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+            if(win.style.display === 'flex') scrollToBottom();
         }
 
         async function sendChatMessage() {
             const input = document.getElementById('chat-input');
-            if(!input.value.trim()) return;
+            const text = input.value.trim();
+            if(!text) return;
             
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            await supabaseClient.from('chat_messages').insert([{
-                user_email: user.email.split('@')[0],
-                message: input.value
-            }]);
-            input.value = '';
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                const { error } = await supabaseClient.from('chat_messages').insert([{
+                    user_email: user.email.split('@')[0],
+                    message: text
+                }]);
+                
+                if (error) throw error;
+                input.value = '';
+            } catch (err) {
+                console.error("Error al enviar:", err.message);
+            }
         }
 
         function loadChatRealtime() {
-            // Cargar mensajes iniciales (últimas 5 horas)
+            // Cargar mensajes de las últimas 5 horas
+            const cincoHorasAtras = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+
             supabaseClient.from('chat_messages')
                 .select('*')
+                .gt('created_at', cincoHorasAtras)
                 .order('created_at', { ascending: true })
                 .then(({ data }) => {
-                    data.forEach(m => appendMessage(m));
-                    scrollToBottom();
+                    if(data) {
+                        document.getElementById('chat-messages').innerHTML = '';
+                        data.forEach(m => appendMessage(m));
+                        scrollToBottom();
+                    }
                 });
 
-            // Escuchar cambios en tiempo real
-            supabaseClient.channel('chat_messages')
+            // Suscripción Realtime Corregida
+            supabaseClient
+                .channel('public:chat_messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
                 payload => {
                     appendMessage(payload.new);
                     scrollToBottom();
-                }).subscribe();
+                })
+                .subscribe();
+
+            // Sistema de Presencia (Online)
+            const presenceChannel = supabaseClient.channel('online_users');
+            presenceChannel
+                .on('presence', { event: 'sync' }, () => {
+                    const count = Object.keys(presenceChannel.presenceState()).length;
+                    document.getElementById('online-count').innerText = `Online: ${count}`;
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        const { data: { user } } = await supabaseClient.auth.getUser();
+                        await presenceChannel.track({ user: user.email });
+                    }
+                });
         }
 
         function appendMessage(msg) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = 'msg animate__animated animate__fadeInUp';
-            div.innerHTML = `<b>${msg.user_email}</b> ${msg.message}`;
+            // Limpiamos el mensaje de posibles scripts maliciosos
+            const safeMsg = msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            div.innerHTML = `<b>${msg.user_email}</b> ${safeMsg}`;
             container.appendChild(div);
         }
 
@@ -342,3 +375,4 @@
     </script>
 </body>
 </html>
+
