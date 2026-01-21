@@ -236,7 +236,7 @@ function renderAstillero() {
                 <div style="font-size:0.7rem; margin:10px 0; color:#aaa;">ATK: ${ship.attack} | ESC: ${ship.shield} | ${ship.time}s</div>
                 <div style="font-size:0.7rem; color:var(--neon-blue); margin-bottom:10px;">M: ${ship.metal} | S: ${ship.silicio}</div>
                 <div style="display:flex; gap:5px;">
-                    <input type="number" id="qty-${ship.id}" class="forum-input" value="1" min="1" style="width:60px; margin:0; padding:5px;">
+                    <input type="number" id="qty-${ship.id}" class="forum-input" value="1" min="1" step="1" oninput="if(this.value < 1) this.value = 1;" style="width:60px; margin:0; padding:5px;">
                     <button class="nav-btn" onclick="ordenarNave('${ship.id}')" style="margin:0; padding:5px; font-size:0.7rem;">CONSTRUIR</button>
                 </div>
             </div>
@@ -409,6 +409,7 @@ async function registrarNaveEnBD(shipId) {
 </html>
 </body>
 </html>
+
 
 
 
