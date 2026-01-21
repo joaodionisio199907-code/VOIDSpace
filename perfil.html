@@ -25,6 +25,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     
     <style>
+        /* Animación de resta de recursos */
+.recurso-resta {
+    position: absolute;
+    color: #ff4444; /* Rojo */
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    pointer-events: none;
+    animation: flotarResta 1.5s ease-out forwards;
+    z-index: 1000;
+    text-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+}
+
+@keyframes flotarResta {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-50px); }
+}
         :root { 
             --neon-blue: #00f2ff; 
             --neon-purple: #bc13fe; 
@@ -321,32 +338,43 @@ async function loadHangar() {
     }).join('');
 }
 
+// --- ORDENAR NAVE (Con Animación Roja) ---
 async function ordenarNave(id) {
-    const qty = parseInt(document.getElementById(`qty-${id}`).value);
+    const qtyInput = document.getElementById(`qty-${id}`);
+    const qty = parseInt(qtyInput.value);
     const ship = NAVES_DISPONIBLES.find(s => s.id === id);
     const costM = ship.metal * qty;
     const costS = ship.silicio * qty;
 
     if (userResources.metal >= costM && userResources.silicio >= costS) {
         const { data: { user } } = await supabaseClient.auth.getUser();
-        await supabaseClient.from('players').update({
+        
+        const { error } = await supabaseClient.from('players').update({
             metal: userResources.metal - costM,
             silicio: userResources.silicio - costS
         }).eq('id', user.id);
 
-        let baseTime = new Date();
-        if (shipQueue.length > 0) baseTime = new Date(shipQueue[shipQueue.length-1].finish_at);
-        const finishAt = new Date(baseTime.getTime() + (ship.time * qty * 1000)).toISOString();
+        if (!error) {
+            // LANZAR ANIMACIONES ROJAS
+            animarResta('res-metal', costM);
+            animarResta('res-silice', costS);
 
-        await supabaseClient.from('ship_queue').insert([{
-            user_id: user.id, ship_id: ship.id, quantity: qty, finish_at: finishAt
-        }]);
+            userResources.metal -= costM;
+            userResources.silicio -= costS;
+            actualizarInterfazRecursos();
 
-        await actualizarRecursosDesdeBD();
-        syncShipQueueFromDB();
+            let baseTime = new Date();
+            if (shipQueue.length > 0) baseTime = new Date(shipQueue[shipQueue.length-1].finish_at);
+            const finishAt = new Date(baseTime.getTime() + (ship.time * qty * 1000)).toISOString();
+
+            await supabaseClient.from('ship_queue').insert([{
+                user_id: user.id, ship_id: ship.id, quantity: qty, finish_at: finishAt
+            }]);
+
+            syncShipQueueFromDB();
+        }
     } else { alert("Recursos insuficientes"); }
 }
-
 async function syncShipQueueFromDB() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     const { data } = await supabaseClient.from('ship_queue').select('*').eq('user_id', user.id).order('finish_at', { ascending: true });
@@ -393,7 +421,7 @@ async function registrarNaveEnBD(shipId, quantity) {
     }
 }
 
-// --- MEJORAS DE EDIFICIOS ---
+// --- MEJORAR EDIFICIO (Con Animación Roja) ---
 async function mejorarEdificio(dbType) {
     if (!AntiCheat.isValidAmount(userResources.metal)) return;
     const { data: { user } } = await supabaseClient.auth.getUser();
@@ -405,12 +433,32 @@ async function mejorarEdificio(dbType) {
     const { error } = await supabaseClient.from('players').update({ metal: userResources.metal - costo }).eq('id', user.id);
 
     if (!error) {
+        // LANZAR ANIMACIÓN ROJA
+        animarResta('res-metal', costo);
+
         userResources.metal -= costo;
         actualizarInterfazRecursos();
         iniciarTemporizadorVisual(dbType, calcularTiempo(dbType, edificioData.level + 1), edificioData.level + 1);
     }
 }
+function animarResta(idContenedor, cantidad) {
+    const contenedor = document.getElementById(idContenedor);
+    if (!contenedor) return;
 
+    const flotante = document.createElement('div');
+    flotante.className = 'recurso-resta';
+    flotante.innerText = `-${Math.floor(cantidad)}`;
+    
+    // Posicionar relativo al marcador
+    const rect = contenedor.getBoundingClientRect();
+    flotante.style.left = `${rect.left + (rect.width / 2)}px`;
+    flotante.style.top = `${rect.top}px`;
+
+    document.body.appendChild(flotante);
+
+    // Eliminar del DOM tras la animación
+    setTimeout(() => flotante.remove(), 1500);
+}
 // --- PERFIL ---
 function abrirAjustesPerfil() { document.getElementById('modal-perfil').style.display = 'flex'; }
 function cerrarAjustesPerfil() { document.getElementById('modal-perfil').style.display = 'none'; }
@@ -432,3 +480,4 @@ async function guardarPerfil() {
     </script>
 </body>
 </html>
+
