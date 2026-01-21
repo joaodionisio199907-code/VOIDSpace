@@ -24,8 +24,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     
     <style>
-        /* (Se mantienen todos tus estilos originales de variables, foro, chat y sidebar) */
-        :root { --neon-blue: #00f2ff; --neon-purple: #bc13fe; --dark-bg: #0a0b10; --card-bg: rgba(16, 18, 27, 0.9); }
+        :root { 
+            --neon-blue: #00f2ff; 
+            --neon-purple: #bc13fe; 
+            --dark-bg: #0a0b10; 
+            --card-bg: rgba(16, 18, 27, 0.9); 
+            --danger: #ff4444;
+        }
         .recurso-flotante { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); color: var(--neon-blue); font-weight: bold; animation: flotarArriba 2s ease-out forwards; pointer-events: none; z-index: 100; text-shadow: 0 0 10px rgba(0, 242, 255, 0.8); }
         @keyframes flotarArriba { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -40px); } }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -39,14 +44,33 @@
         .game-section { display: none; }
         .game-section.active { display: block; }
         .building-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        
         /* Estilos foro */
         .forum-container { background: var(--card-bg); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 20px; }
         .forum-topic-card { background: rgba(255,255,255,0.03); border: 1px solid #222; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; }
         .forum-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #333; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        
         /* Estilos chat */
         #chat-bubble { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--neon-purple); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; }
         #chat-window { position: fixed; bottom: 90px; right: 20px; width: 350px; height: 450px; background: var(--card-bg); border: 1px solid var(--neon-purple); border-radius: 15px; display: none; flex-direction: column; z-index: 1000; }
         #chat-messages { flex: 1; padding: 15px; overflow-y: auto; }
+
+        /* NUEVOS ESTILOS ASTILLERO */
+        .shipyard-layout { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
+        .ship-card { background: rgba(20, 22, 30, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); transition: 0.3s; position: relative; border-radius: 10px; overflow: hidden; }
+        .ship-card.active:hover { border-color: var(--neon-blue); transform: translateY(-5px); }
+        .ship-card.empty { opacity: 0.3; border: 1px dashed #444; display: flex; align-items: center; justify-content: center; min-height: 380px; background: transparent; }
+        .ship-img-container { position: relative; height: 160px; background: #000; }
+        .ship-img { width: 100%; height: 100%; object-fit: cover; }
+        .scan-effect { position: absolute; width: 100%; height: 2px; background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); animation: scanLine 3s infinite linear; }
+        @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
+        .ship-info { padding: 15px; }
+        .queue-container { background: var(--card-bg); border: 1px solid var(--neon-purple); padding: 15px; border-radius: 15px; position: sticky; top: 20px; }
+        .queue-item { background: rgba(255,255,255,0.03); margin-bottom: 10px; padding: 12px; border-left: 3px solid var(--neon-purple); position: relative; border-radius: 4px; }
+        .cancel-x { position: absolute; top: 5px; right: 5px; background: rgba(255,68,68,0.2); border: 1px solid var(--danger); color: var(--danger); font-size: 0.7rem; cursor: pointer; padding: 2px 5px; border-radius: 3px; }
+        .cancel-x:hover { background: var(--danger); color: white; }
+        .ship-progress-bg { height: 4px; background: #111; margin-top: 10px; border-radius: 2px; overflow: hidden; }
+        .ship-progress-fill { height: 100%; background: var(--neon-blue); width: 0%; transition: width 1s linear; }
     </style>
 </head>
 <body>
@@ -92,8 +116,19 @@
             </div>
 
             <div id="sec-fleet" class="game-section">
-                <div class="building-grid" id="fleet-list">
-                    <p style="text-align:center; padding:50px; opacity:0.5;">Astillero bloqueado. Requiere Laboratorio Nivel 1.</p>
+                <div class="shipyard-layout">
+                    <div class="building-grid" id="fleet-list-container">
+                        </div>
+                    <div class="side-panel">
+                        <div class="queue-container">
+                            <h3 style="font-family:'Orbitron'; font-size:0.8rem; margin-bottom:15px; color:var(--neon-purple);">
+                                <i class="fas fa-tools"></i> COLA DE CONSTRUCCIÓN
+                            </h3>
+                            <div id="ship-queue-list">
+                                <p style="text-align:center; opacity:0.4; font-size:0.8rem; padding:20px;">ASTILLERO INACTIVO</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -144,16 +179,155 @@
     </div>
 
     <script>
+        // --- DATOS DE NAVES ---
+        const NAVES_DISPONIBLES = [
+            { id: 'cazador_l', name: 'CAZADOR LIGERO', metal: 3000, silicio: 1000, time: 15, img: 'https://images.unsplash.com/photo-1614728263952-84ea256f9679?w=400', attack: 50, shield: 10 },
+            { id: 'carguero_p', name: 'CARGUERO PEQUEÑO', metal: 2000, silicio: 2000, time: 25, img: 'https://images.unsplash.com/photo-1581822261290-991b38693d1b?w=400', attack: 5, shield: 20 }
+        ];
+
+        let shipQueue = [];
+        let shipTimerInterval = null;
+
         // --- LÓGICA DE NAVEGACIÓN ---
         function showSection(id) {
             document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('sec-'+id).classList.add('active');
+            
             if(id === 'forum') loadForumTopics();
             if(id === 'resources' || id === 'research') renderList(id);
+            if(id === 'fleet') renderAstillero();
         }
 
-        // --- FUNCIONES DEL FORO REINTEGRADAS ---
+        // --- RENDERIZADO DEL ASTILLERO ---
+        function renderAstillero() {
+            const container = document.getElementById('fleet-list-container');
+            let html = '';
+
+            // Naves reales
+            NAVES_DISPONIBLES.forEach(ship => {
+                html += `
+                    <div class="ship-card active animate__animated animate__fadeIn">
+                        <div class="ship-img-container">
+                            <div class="scan-effect"></div>
+                            <img src="${ship.img}" class="ship-img">
+                        </div>
+                        <div class="ship-info">
+                            <h3 style="font-family:Orbitron; font-size:0.9rem; color:var(--neon-blue);">${ship.name}</h3>
+                            <div style="font-size:0.7rem; margin:10px 0; color:#aaa;">
+                                ATK: ${ship.attack} | ESC: ${ship.shield} | ${ship.time}s
+                            </div>
+                            <div style="font-size:0.7rem; color:var(--neon-blue); margin-bottom:10px;">
+                                M: ${ship.metal} | S: ${ship.silicio}
+                            </div>
+                            <div style="display:flex; gap:5px;">
+                                <input type="number" id="qty-${ship.id}" class="forum-input" value="1" min="1" style="width:60px; margin:0; padding:5px;">
+                                <button class="nav-btn" onclick="ordenarNave('${ship.id}')" style="margin:0; padding:5px; font-size:0.7rem;">CONSTRUIR</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 37 Cajas vacías (Naves futuras)
+            for(let i=1; i<=37; i++) {
+                html += `
+                    <div class="ship-card empty">
+                        <div style="text-align:center;">
+                            <i class="fas fa-lock" style="font-size:1.5rem; color:#444; margin-bottom:10px;"></i>
+                            <div style="font-size:0.6rem; letter-spacing:1px; color:#555;">PLANO BLOQUEADO [${i+2}]</div>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function ordenarNave(id) {
+            const ship = NAVES_DISPONIBLES.find(s => s.id === id);
+            const qty = parseInt(document.getElementById(`qty-${id}`).value);
+            
+            const newOrder = {
+                uid: Date.now(),
+                ...ship,
+                qty: qty,
+                originalQty: qty,
+                timeLeft: ship.time,
+                costMetal: ship.metal * qty,
+                costSilicio: ship.silicio * qty
+            };
+
+            shipQueue.push(newOrder);
+            updateShipQueueUI();
+            if(shipQueue.length === 1) processShipQueue();
+        }
+
+        function cancelarNave(uid) {
+            const index = shipQueue.findIndex(o => o.uid === uid);
+            if(index === -1) return;
+
+            const order = shipQueue[index];
+            const refundM = Math.floor(order.costMetal * 0.9);
+            const refundS = Math.floor(order.costSilicio * 0.9);
+
+            alert(`Orden cancelada. Reembolso del 90% procesado:\n+${refundM} Ferrum\n+${refundS} Sílice`);
+
+            shipQueue.splice(index, 1);
+            if(index === 0) {
+                clearInterval(shipTimerInterval);
+                processShipQueue();
+            }
+            updateShipQueueUI();
+        }
+
+        function updateShipQueueUI() {
+            const container = document.getElementById('ship-queue-list');
+            if(shipQueue.length === 0) {
+                container.innerHTML = `<p style="text-align:center; opacity:0.4; font-size:0.8rem; padding:20px;">ASTILLERO INACTIVO</p>`;
+                return;
+            }
+
+            container.innerHTML = shipQueue.map((order, idx) => `
+                <div class="queue-item animate__animated animate__slideInRight">
+                    <button class="cancel-x" onclick="cancelarNave(${order.uid})">CANCELAR (90%)</button>
+                    <div style="font-size:0.8rem; color:var(--neon-blue);">${order.qty}x ${order.name}</div>
+                    ${idx === 0 ? `
+                        <div style="font-size:0.6rem; color:#888; margin-top:5px;">En producción: ${order.originalQty - order.qty + 1} de ${order.originalQty}</div>
+                        <div class="ship-progress-bg"><div class="ship-progress-fill" id="ship-fill" style="width:0%"></div></div>
+                        <div style="text-align:right; font-size:0.7rem; color:var(--neon-blue); margin-top:5px;" id="ship-timer-text">${order.timeLeft}s</div>
+                    ` : `<div style="font-size:0.6rem; color:#555; margin-top:5px;">ESPERANDO TURNO...</div>`}
+                </div>
+            `).join('');
+        }
+
+        function processShipQueue() {
+            if(shipQueue.length === 0) return;
+            const current = shipQueue[0];
+
+            shipTimerInterval = setInterval(() => {
+                current.timeLeft--;
+                const fill = document.getElementById('ship-fill');
+                const text = document.getElementById('ship-timer-text');
+                
+                if(fill) fill.style.width = ((current.time - current.timeLeft) / current.time * 100) + "%";
+                if(text) text.innerText = current.timeLeft + "s";
+
+                if(current.timeLeft <= 0) {
+                    clearInterval(shipTimerInterval);
+                    current.qty--;
+                    if(current.qty > 0) {
+                        current.timeLeft = current.time;
+                        processShipQueue();
+                    } else {
+                        shipQueue.shift();
+                        processShipQueue();
+                    }
+                    updateShipQueueUI();
+                }
+            }, 1000);
+        }
+
+        // --- FUNCIONES DEL FORO ---
         let currentTopicId = null;
         async function loadForumTopics() {
             const { data } = await supabaseClient.from('forum_topics').select('*').order('created_at', { ascending: false });
