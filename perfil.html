@@ -71,6 +71,13 @@
         .cancel-x:hover { background: var(--danger); color: white; }
         .ship-progress-bg { height: 4px; background: #111; margin-top: 10px; border-radius: 2px; overflow: hidden; }
         .ship-progress-fill { height: 100%; background: var(--neon-blue); width: 0%; transition: width 1s linear; }
+
+        /* Estilos Hangar */
+        .hangar-section { margin-top: 30px; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,242,255,0.1); border-radius: 15px; padding: 20px; }
+        .hangar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 15px; }
+        .hangar-item { background: var(--card-bg); border: 1px solid #333; padding: 10px; border-radius: 8px; text-align: center; }
+        .hangar-item b { color: var(--neon-blue); display: block; font-size: 0.8rem; margin-bottom: 5px; }
+        .hangar-item span { font-size: 1.2rem; font-family: 'Orbitron'; }
     </style>
 </head>
 <body>
@@ -117,8 +124,19 @@
 
             <div id="sec-fleet" class="game-section">
                 <div class="shipyard-layout">
-                    <div class="building-grid" id="fleet-list-container">
+                    <div>
+                        <div class="building-grid" id="fleet-list-container"></div>
+                        
+                        <div class="hangar-section">
+                            <h3 style="font-family:Orbitron; font-size:0.9rem; color:var(--neon-blue);">
+                                <i class="fas fa-warehouse"></i> HANGAR DE LA FLOTA
+                            </h3>
+                            <div id="hangar-grid" class="hangar-grid">
+                                <p style="opacity:0.4; font-size:0.8rem;">Cargando inventario de naves...</p>
+                            </div>
                         </div>
+                    </div>
+
                     <div class="side-panel">
                         <div class="queue-container">
                             <h3 style="font-family:'Orbitron'; font-size:0.8rem; margin-bottom:15px; color:var(--neon-purple);">
@@ -196,7 +214,7 @@
             
             if(id === 'forum') loadForumTopics();
             if(id === 'resources' || id === 'research') renderList(id);
-            if(id === 'fleet') renderAstillero();
+            if(id === 'fleet') { renderAstillero(); loadHangar(); }
         }
 
         // --- RENDERIZADO DEL ASTILLERO ---
@@ -204,7 +222,6 @@
             const container = document.getElementById('fleet-list-container');
             let html = '';
 
-            // Naves reales
             NAVES_DISPONIBLES.forEach(ship => {
                 html += `
                     <div class="ship-card active animate__animated animate__fadeIn">
@@ -229,7 +246,6 @@
                 `;
             });
 
-            // 37 Cajas vacías (Naves futuras)
             for(let i=1; i<=37; i++) {
                 html += `
                     <div class="ship-card empty">
@@ -243,23 +259,65 @@
             container.innerHTML = html;
         }
 
-        function ordenarNave(id) {
+        // --- NUEVA FUNCION: CARGAR HANGAR ---
+        async function loadHangar() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            const { data: fleet, error } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id);
+            
+            const container = document.getElementById('hangar-grid');
+            if (error || !fleet || fleet.length === 0) {
+                container.innerHTML = `<p style="opacity:0.4; font-size:0.8rem; grid-column: 1/-1;">Sin naves en el hangar.</p>`;
+                return;
+            }
+            
+            container.innerHTML = fleet.map(item => {
+                const info = NAVES_DISPONIBLES.find(n => n.id === item.ship_id);
+                return `
+                    <div class="hangar-item animate__animated animate__flipInX">
+                        <b>${info ? info.name : item.ship_id}</b>
+                        <span>${item.quantity}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- ACTUALIZADA: ORDENAR NAVE (Resta materiales de la BD) ---
+        async function ordenarNave(id) {
             const ship = NAVES_DISPONIBLES.find(s => s.id === id);
             const qty = parseInt(document.getElementById(`qty-${id}`).value);
-            
-            const newOrder = {
-                uid: Date.now(),
-                ...ship,
-                qty: qty,
-                originalQty: qty,
-                timeLeft: ship.time,
-                costMetal: ship.metal * qty,
-                costSilicio: ship.silicio * qty
-            };
+            const { data: { user } } = await supabaseClient.auth.getUser();
 
-            shipQueue.push(newOrder);
-            updateShipQueueUI();
-            if(shipQueue.length === 1) processShipQueue();
+            // 1. Obtener recursos actuales del usuario desde la BD
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+            
+            const costM = ship.metal * qty;
+            const costS = ship.silicio * qty;
+
+            if (profile.metal >= costM && profile.silice >= costS) {
+                // 2. Restar recursos en la base de datos
+                await supabaseClient.from('profiles').update({
+                    metal: profile.metal - costM,
+                    silice: profile.silice - costS
+                }).eq('id', user.id);
+
+                // 3. Añadir a la cola local
+                const newOrder = {
+                    uid: Date.now(),
+                    ...ship,
+                    qty: qty,
+                    originalQty: qty,
+                    timeLeft: ship.time,
+                    costMetal: costM,
+                    costSilicio: costS
+                };
+
+                shipQueue.push(newOrder);
+                actualizarRecursosDesdeBD(); // Actualizar UI superior
+                updateShipQueueUI();
+                if(shipQueue.length === 1) processShipQueue();
+            } else {
+                alert("RECURSOS INSUFICIENTES: Necesitas " + costM + " Metal y " + costS + " Sílice.");
+            }
         }
 
         function cancelarNave(uid) {
@@ -269,6 +327,9 @@
             const order = shipQueue[index];
             const refundM = Math.floor(order.costMetal * 0.9);
             const refundS = Math.floor(order.costSilicio * 0.9);
+
+            // Reembolso en BD (opcional, pero justo)
+            // Aquí podrías añadir una llamada a Supabase para devolver los recursos.
 
             alert(`Orden cancelada. Reembolso del 90% procesado:\n+${refundM} Ferrum\n+${refundS} Sílice`);
 
@@ -304,7 +365,7 @@
             if(shipQueue.length === 0) return;
             const current = shipQueue[0];
 
-            shipTimerInterval = setInterval(() => {
+            shipTimerInterval = setInterval(async () => {
                 current.timeLeft--;
                 const fill = document.getElementById('ship-fill');
                 const text = document.getElementById('ship-timer-text');
@@ -314,6 +375,10 @@
 
                 if(current.timeLeft <= 0) {
                     clearInterval(shipTimerInterval);
+                    
+                    // --- GUARDAR EN BD AL TERMINAR ---
+                    await registrarNaveEnBD(current.id);
+                    
                     current.qty--;
                     if(current.qty > 0) {
                         current.timeLeft = current.time;
@@ -323,8 +388,29 @@
                         processShipQueue();
                     }
                     updateShipQueueUI();
+                    loadHangar(); // Actualizar hangar visual
                 }
             }, 1000);
+        }
+
+        // --- NUEVA FUNCION: PERSISTENCIA DE NAVES ---
+        async function registrarNaveEnBD(shipId) {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            
+            // Intentar ver si el usuario ya tiene esta nave
+            const { data: existing } = await supabaseClient.from('user_fleet')
+                .select('*').eq('user_id', user.id).eq('ship_id', shipId).single();
+
+            if (existing) {
+                // Si existe, sumar 1 a la cantidad
+                await supabaseClient.from('user_fleet')
+                    .update({ quantity: existing.quantity + 1 })
+                    .eq('id', existing.id);
+            } else {
+                // Si no existe, crear el registro
+                await supabaseClient.from('user_fleet')
+                    .insert([{ user_id: user.id, ship_id: shipId, quantity: 1 }]);
+            }
         }
 
         // --- FUNCIONES DEL FORO ---
