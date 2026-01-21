@@ -266,32 +266,27 @@ async function ordenarNave(id) {
     const costS = ship.silicio * qty;
 
     if (userResources.metal >= costM && userResources.silicio >= costS) {
-        // 1. Descontar en BD
+        // Descontar recursos en la base de datos
         await supabaseClient.from('players').update({
             metal: userResources.metal - costM,
             silicio: userResources.silicio - costS
         }).eq('id', user.id);
 
-        // 2. CREAR EL OBJETO CON LOS COSTOS (Lo que me preguntaste)
-        const newOrder = { 
+        // Creamos el objeto incluyendo los costos para el reembolso
+        shipQueue.push({ 
             ...ship, 
             uid: Date.now(), 
-            qty: qty, 
+            qty, 
             timeLeft: ship.time,
-            costMetal: costM,     // Guardamos esto para el reembolso
-            costSilicio: costS    // Guardamos esto para el reembolso
-        };
-
-        // 3. Meter a la cola
-        shipQueue.push(newOrder);
+            costMetal: costM, 
+            costSilicio: costS 
+        });
         
         if (typeof actualizarRecursosDesdeBD === "function") actualizarRecursosDesdeBD();
         updateShipQueueUI();
-        
-        // 4. Si el astillero estaba libre, empezar a fabricar
         if (shipQueue.length === 1) processShipQueue();
     } else {
-        alert("Recursos insuficientes para esta flota.");
+        alert("Recursos insuficientes.");
     }
 }
 
@@ -318,6 +313,44 @@ function updateShipQueueUI() {
         </div>`).join('');
 }
 
+async function cancelarConstruccion(uid) {
+    // 1. Localizar el pedido en la cola
+    const index = shipQueue.findIndex(q => q.uid === uid);
+    if (index === -1) return;
+
+    const pedido = shipQueue[index];
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    // 2. Calcular reembolso (90% de lo que costó)
+    const reembolsoM = Math.floor(pedido.costMetal * 0.9);
+    const reembolsoS = Math.floor(pedido.costSilicio * 0.9);
+
+    // 3. Devolver los recursos al jugador en Supabase
+    const { data: player } = await supabaseClient.from('players').select('metal, silicio').eq('id', user.id).single();
+    
+    await supabaseClient.from('players').update({
+        metal: player.metal + reembolsoM,
+        silicio: player.silicio + reembolsoS
+    }).eq('id', user.id);
+
+    // 4. Si es la nave que se está fabricando ahora, detener el reloj
+    if (index === 0) {
+        clearInterval(shipTimerInterval);
+    }
+
+    // 5. Quitar de la lista
+    shipQueue.splice(index, 1);
+
+    // 6. Si quitamos la primera y hay más naves esperando, empezar la siguiente
+    if (index === 0 && shipQueue.length > 0) {
+        processShipQueue();
+    }
+
+    // 7. Actualizar todo visualmente
+    updateShipQueueUI();
+    if (typeof actualizarRecursosDesdeBD === "function") actualizarRecursosDesdeBD();
+    alert("Construcción cancelada. Se ha reembolsado el 90% de los recursos.");
+}        
 function processShipQueue() {
     if(shipQueue.length === 0) return;
     
@@ -374,6 +407,7 @@ async function registrarNaveEnBD(shipId) {
 </html>
 </body>
 </html>
+
 
 
 
