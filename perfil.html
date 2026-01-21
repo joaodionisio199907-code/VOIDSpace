@@ -496,10 +496,50 @@
             await syncBuildingsFromSupabase();
             loadChatRealtime();
             setInterval(actualizarRecursosDesdeBD, 5000);
-        })();
+        })(); 
+        async function mejorarEdificio(gameId) {
+    // 1. Mapeamos el ID del juego al nombre en la base de datos
+    const dbType = mapBuildingId(gameId);
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    if (!user) return alert("Sesión expirada. Por favor, inicia sesión de nuevo.");
+
+    // 2. Buscamos el nivel actual en nuestro caché local
+    const edificioActual = dbBuildingsCache.find(db => db.building_type === dbType);
+    const nivelActual = edificioActual ? edificioActual.level : 0;
+    const nuevoNivel = nivelActual + 1;
+
+    console.log(`Subiendo ${dbType} al nivel ${nuevoNivel}...`);
+
+    try {
+        // 3. Actualizamos en Supabase
+        // Usamos upsert: si existe lo actualiza, si no, lo crea.
+        const { error } = await supabaseClient
+            .from('buildings')
+            .upsert({ 
+                user_id: user.id, 
+                building_type: dbType, 
+                level: nuevoNivel,
+                is_upgrading: false // Cambiar a true si implementas tiempo de espera
+            }, { 
+                onConflict: 'user_id, building_type' 
+            });
+
+        if (error) throw error;
+
+        // 4. Refrescamos la interfaz
+        await syncBuildingsFromSupabase();
+        alert(`¡Mejora completada! ${gameId} ahora es nivel ${nuevoNivel}`);
+
+    } catch (error) {
+        console.error("Error en la mejora:", error.message);
+        alert("Error al conectar con el Comando Central: " + error.message);
+    }
+}
     </script>
 </body>
 </html>
+
 
 
 
