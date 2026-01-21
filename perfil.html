@@ -1393,33 +1393,38 @@ async function mejorarEdificio(buildingId) {
     }
 }    
 
-function renderList(sectionId) {
-    const container = document.getElementById(sectionId + '-list');
+function renderList(section) {
+    const container = document.getElementById(section + '-list');
     if (!container) return;
     container.innerHTML = '';
 
-    game.buildings.filter(b => b.section === sectionId).forEach(b => {
-        const currentCost = getUpgradeCost(b.lvl);
-        // Importante: El ID del botón debe coincidir con el mapeo
-        const dbId = mapBuildingId(b.id);
+    const filtered = game.buildings.filter(b => b.section === section);
+
+    filtered.forEach(b => {
+        const dbType = mapBuildingId(b.id);
+        // Buscamos si este edificio ya existe en nuestra base de datos
+        const dbB = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 1, is_upgrading: false };
+        
+        const cost = getUpgradeCost(dbB.level);
+
         container.innerHTML += `
-            <div class="build-card">
-                <span class="lvl-badge">NIV ${b.lvl}</span>
-                <div class="build-img-container"></div>
-                <div class="build-card-content">
-                    <h4 style="color:var(--neon-blue);">${b.name}</h4>
-                    <p class="lore-text">${b.lore}</p>
-                    <button id="btn-${dbId}" class="btn-upgrade" onclick="mejorarEdificio('${dbId}')">
-                        MEJORAR
+            <div class="building-card">
+                <img src="${b.img || 'img/placeholder.png'}" class="building-img">
+                <div class="building-info">
+                    <span class="building-name">${b.name}</span>
+                    <span class="building-lvl">NV. ${dbB.level}</span>
+                    <p>${b.lore}</p>
+                    <div class="cost">Coste: ${cost} Ferrum</div>
+                    
+                    <button class="btn-upgrade" 
+                            id="btn-upgrade-${dbType}" 
+                            onclick="mejorarEdificio('${b.id}')">
+                        ${dbB.is_upgrading ? 'INICIANDO...' : 'MEJORAR'}
                     </button>
-                    <div style="margin-top:10px; font-size:0.8em; color:#00f2ff;">
-                        COSTE: ${currentCost} Fe
-                    </div>
                 </div>
             </div>`;
     });
 }
-
 // --- INICIALIZACIÓN CRÍTICA ---
 (async () => {
     console.log("Sistema iniciando...");
@@ -1443,9 +1448,44 @@ function renderList(sectionId) {
     setInterval(finalizarMejoras, 5000);
     console.log("Sistemas operativos para:", user.email);
 })();
+    function actualizarContadoresMejora() {
+    const ahora = new Date();
+
+    dbBuildingsCache.forEach(b => {
+        if (b.is_upgrading && b.upgrade_end) {
+            const tiempoFinal = new Date(b.upgrade_end);
+            const restante = tiempoFinal - ahora;
+
+            // Buscamos el botón de este edificio en el HTML
+            // Nota: El ID del botón debe ser único, por ejemplo: btn-upgrade-mina_metal
+            const btn = document.getElementById(`btn-upgrade-${b.building_type}`);
+            
+            if (btn) {
+                if (restante > 0) {
+                    const minutos = Math.floor((restante / 1000 / 60) % 60);
+                    const segundos = Math.floor((restante / 1000) % 60);
+                    btn.innerText = `CONSTRUYENDO... ${minutos}m ${segundos}s`;
+                    btn.disabled = true;
+                    btn.style.opacity = "0.7";
+                    btn.style.cursor = "not-allowed";
+                } else {
+                    // La mejora ha terminado
+                    btn.innerText = "¡COMPLETAR!";
+                    btn.disabled = false;
+                    btn.style.borderColor = "var(--neon-green)";
+                    btn.onclick = () => finalizarMejora(b.building_type);
+                }
+            }
+        }
+    });
+}
+
+// Ejecutar el contador cada segundo
+setInterval(actualizarContadoresMejora, 1000);
 </script>
 </body>
 </html>
+
 
 
 
