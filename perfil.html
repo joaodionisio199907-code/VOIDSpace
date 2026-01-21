@@ -1483,25 +1483,39 @@ async function finalizarMejoras() {
     }
 }
 
-// --- INICIALIZACIÓN ---
+
 // --- INICIALIZACIÓN ---
 (async () => {
+    console.log("Iniciando sistemas...");
     initSelectors();
     showSection('overview');
+
+    // Verificamos el usuario antes de nada
+    const { data: { user } } = await supabaseClient.auth.getUser();
     
-    // Cargamos todo en orden
-    await syncBuildingsFromSupabase(); // Primero niveles
-    await actualizarRecursosDesdeBD(); // Luego recursos
+    if (!user) {
+        console.error("ERROR: No hay usuario autenticado. Redirigiendo...");
+        // window.location.href = 'index.html'; // Descomenta esto si quieres que te eche si no estas logueado
+        return;
+    }
+
+    console.log("Usuario detectado:", user.email);
+
+    // Si hay usuario, cargamos todo
+    await syncBuildingsFromSupabase();
+    await actualizarRecursosDesdeBD();
     
-    // Activamos los relojes
-    setInterval(actualizarRecursosDesdeBD, 10000); // Sincroniza con el servidor cada 10s
-    setInterval(updateButtonsPeriodically, 1000); // El reloj del botón cada 1s
-    setInterval(finalizarMejoras, 5000);           // Revisa si terminó una mejora cada 5s
+    setInterval(actualizarRecursosDesdeBD, 5000); 
+    setInterval(updateButtonsPeriodically, 1000); 
+    setInterval(finalizarMejoras, 5000);
+    
+    console.log("Sistemas listos.");
 })();
 </script>
 
 </body>
 </html>
+
 
 
 
