@@ -1402,24 +1402,35 @@ function renderList(section) {
 
     filtered.forEach(b => {
         const dbType = mapBuildingId(b.id);
-        // Buscamos si este edificio ya existe en nuestra base de datos
+        // Buscamos datos reales de la DB o usamos valores por defecto si no existen
         const dbB = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 1, is_upgrading: false };
         
-        const cost = getUpgradeCost(dbB.level);
+        const currentLevel = dbB.level;
+        const cost = getUpgradeCost(currentLevel);
 
+        // Generamos el HTML respetando tus clases de CSS originales
         container.innerHTML += `
-            <div class="building-card">
-                <img src="${b.img || 'img/placeholder.png'}" class="building-img">
+            <div class="building-card animate__animated animate__fadeIn">
+                <img src="${b.img || 'img/minaferrum/lv1/lv1.png'}" class="building-img" alt="${b.name}">
                 <div class="building-info">
-                    <span class="building-name">${b.name}</span>
-                    <span class="building-lvl">NV. ${dbB.level}</span>
-                    <p>${b.lore}</p>
-                    <div class="cost">Coste: ${cost} Ferrum</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="building-name">${b.name}</span>
+                        <span class="building-lvl">NIVEL ${currentLevel}</span>
+                    </div>
+                    <p style="font-size:0.75rem; color:#888; margin:8px 0; min-height:30px;">${b.lore}</p>
                     
+                    <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
+                        <div style="font-size:0.7rem; color:#aaa; text-transform:uppercase;">Requerido para nivel ${currentLevel + 1}:</div>
+                        <div style="font-size:0.85rem; color:var(--neon-blue); font-family:'Share Tech Mono';">
+                            <i class="fas fa-cube"></i> ${cost.toLocaleString()} FERRUM
+                        </div>
+                    </div>
+
                     <button class="btn-upgrade" 
                             id="btn-upgrade-${dbType}" 
-                            onclick="mejorarEdificio('${b.id}')">
-                        ${dbB.is_upgrading ? 'INICIANDO...' : 'MEJORAR'}
+                            onclick="mejorarEdificio('${b.id}')"
+                            ${dbB.is_upgrading ? 'disabled' : ''}>
+                        ${dbB.is_upgrading ? '<i class="fas fa-hammer fa-spin"></i> CONSTRUYENDO...' : '<i class="fas fa-chevron-circle-up"></i> MEJORAR'}
                     </button>
                 </div>
             </div>`;
@@ -1485,6 +1496,7 @@ setInterval(actualizarContadoresMejora, 1000);
 </script>
 </body>
 </html>
+
 
 
 
