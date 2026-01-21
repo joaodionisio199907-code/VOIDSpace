@@ -540,9 +540,30 @@ function renderList(section) {
         alert("Error al conectar con el Comando Central: " + error.message);
     }
 }
+
+    <script src="game.js"></script> 
+
+    <script>
+        (async () => {
+            // Validar acceso primero
+            await validarAcceso(); 
+            
+            // Cargar datos iniciales
+            await actualizarRecursosDesdeBD(); 
+            await syncBuildingsFromSupabase(); 
+            
+            // IMPORTANTE: Llamar a renderList manualmente la primera vez para dibujar las tarjetas
+            renderList('resources'); 
+            
+            loadChatRealtime();
+            
+            // Ciclo de actualización de recursos cada 8 segundos
+            setInterval(actualizarRecursosDesdeBD, 8000); 
+        })();
     </script>
 </body>
 </html>
+
 
 
 
