@@ -1,19 +1,19 @@
 // game.js - Comando Central de VOID ECHOS
 
-// 1. DEFINICIÓN VISUAL (Lo que se ve en las tarjetas)
+// 1. DEFINICIÓN VISUAL (Datos para renderizar las tarjetas)
 const DATA_VISUAL_EDIFICIOS = [
     { id: 'minaFe', section: 'resources', name: 'Mina de Ferrum', lore: 'Extractor de mineral ferroso para estructuras.', img: 'img/minaferrum/lv1/lv1.png' },
     { id: 'minaSi', section: 'resources', name: 'Sintetizador de Sílice', lore: 'Procesa arena estelar para componentes electrónicos.', img: 'img/SILICE/sintesili.png' },
     { id: 'minaH3', section: 'resources', name: 'Colector de Isótopo-H3', lore: 'Extrae Deuterio atmosférico para combustible.', img: 'img/isotopoh3/ih3recolector.png' }
 ];
 
-// 2. CONFIGURACIÓN DE BALANCEO (Dificultad y Producción)
+// 2. CONFIGURACIÓN DE BALANCEO (Modifica aquí la dificultad)
 const STATS_EDIFICIOS = {
     "mina_metal": {
         costoBase: 100,
-        crecimiento: 1.5, // 1.5 significa que el costo sube un 50% por nivel
-        tiempoBase: 10,  // Segundos extra por nivel
-        prodBase: 10     // Metal producido cada 8 segundos por nivel
+        crecimiento: 1.5, // Costo sube 50% por nivel
+        tiempoBase: 10,  // Segundos: Nivel * 10
+        prodBase: 10     // Producción cada 8s por nivel
     },
     "mina_silicio": {
         costoBase: 150,
@@ -29,20 +29,18 @@ const STATS_EDIFICIOS = {
     }
 };
 
-// --- LÓGICA DE RENDERIZADO (Dibuja las tarjetas en el HTML) ---
+// --- LÓGICA DE INTERFAZ (UI) ---
 
 function renderList(section) {
     const container = document.getElementById(section + '-list');
     if (!container) return;
-    container.innerHTML = '<p class="loading">Cargando sistemas...</p>';
+    container.innerHTML = '<p class="loading">Sincronizando con la red...</p>';
     
     let htmlContent = '';
 
     DATA_VISUAL_EDIFICIOS.filter(b => b.section === section).forEach(b => {
         const dbType = mapBuildingId(b.id);
-        // Buscamos el nivel real en la base de datos (o nivel 1 si no existe)
         const dbB = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 1 };
-        
         const costoProximo = calcularCosto(dbType, dbB.level + 1);
 
         htmlContent += `
@@ -64,7 +62,24 @@ function renderList(section) {
     container.innerHTML = htmlContent;
 }
 
-// --- LÓGICA DE CÁLCULOS ---
+// Función para el texto flotante (+50)
+function mostrarAnimacionRecursos(idContenedor, cantidad) {
+    if (cantidad <= 0) return;
+    const el = document.getElementById(idContenedor);
+    if (!el) return;
+
+    const parent = el.parentElement;
+    const span = document.createElement("span");
+    span.classList.add("recurso-flotante");
+    span.innerText = `+${Math.floor(cantidad)}`;
+    
+    parent.style.position = "relative";
+    parent.appendChild(span);
+
+    setTimeout(() => span.remove(), 2000);
+}
+
+// --- LÓGICA DE CÁLCULOS MATEMÁTICOS ---
 
 function calcularCosto(type, nivel) {
     const stat = STATS_EDIFICIOS[type] || { costoBase: 100, crecimiento: 1.5 };
@@ -81,7 +96,7 @@ function calcularProduccion(type, nivel) {
     return nivel * stat.prodBase;
 }
 
-// --- FUNCIONES DE BASE DE DATOS ---
+// --- FUNCIONES DE COMUNICACIÓN CON SUPABASE ---
 
 async function actualizarRecursosDesdeBD() {
     const { data: { user } } = await supabaseClient.auth.getUser();
@@ -108,6 +123,12 @@ async function actualizarRecursosDesdeBD() {
 
         await supabaseClient.from('players').update(nuevosRecursos).eq('id', user.id);
 
+        // Activar animaciones visuales
+        if (plusMetal > 0) mostrarAnimacionRecursos('res-metal', plusMetal);
+        if (plusSilicio > 0) mostrarAnimacionRecursos('res-silice', plusSilicio);
+        if (plusDeuterio > 0) mostrarAnimacionRecursos('res-deuterio', plusDeuterio);
+
+        // Actualizar valores globales y UI
         userResources = nuevosRecursos;
         document.getElementById('res-metal').innerText = Math.floor(nuevosRecursos.metal);
         document.getElementById('res-silice').innerText = Math.floor(nuevosRecursos.silicio);
@@ -126,14 +147,16 @@ async function mejorarEdificio(gameId) {
     const btn = document.getElementById(`btn-upgrade-${dbType}`);
 
     if (userResources.metal < costo) {
-        btn.classList.add('shake'); // Efecto visual opcional
+        btn.classList.add('shake');
         setTimeout(() => btn.classList.remove('shake'), 500);
-        return alert(`Necesitas ${costo} de Ferrum para esta mejora.`);
+        return alert(`Recursos insuficientes. Requieres ${costo} de Ferrum.`);
     }
 
+    // Cobrar recursos inmediatamente
     btn.disabled = true;
     await supabaseClient.from('players').update({ metal: userResources.metal - costo }).eq('id', user.id);
 
+    // Iniciar cronómetro en el botón
     let restante = tiempo;
     const timer = setInterval(() => {
         btn.innerHTML = `<i class="fas fa-hourglass-half"></i> ${restante}s`;
@@ -147,12 +170,14 @@ async function mejorarEdificio(gameId) {
 }
 
 async function finalizarMejora(userId, dbType, nuevoNivel, gameId) {
-    await supabaseClient.from('buildings').upsert({ 
+    const { error } = await supabaseClient.from('buildings').upsert({ 
         user_id: userId, 
         building_type: dbType, 
         level: nuevoNivel 
     }, { onConflict: 'user_id, building_type' });
 
-    await syncBuildingsFromSupabase();
-    renderList('resources'); // Re-dibujamos para actualizar nivel y nuevo precio
+    if (!error) {
+        await syncBuildingsFromSupabase();
+        renderList('resources'); // Actualiza visualmente la tarjeta
+    }
 }
