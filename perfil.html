@@ -285,17 +285,24 @@ async function ordenarNave(id) {
 
 function updateShipQueueUI() {
     const container = document.getElementById('ship-queue-list');
+    
     if (shipQueue.length === 0) {
         container.innerHTML = "<p style='text-align:center; opacity:0.4; font-size:0.8rem; padding:20px;'>ASTILLERO INACTIVO</p>";
         return;
     }
+
     container.innerHTML = shipQueue.map((order, idx) => `
         <div class="queue-item">
-            <div style="font-size:0.8rem;">${order.qty}x ${order.name}</div>
+            <span class="cancel-x" onclick="cancelarConstruccion(${order.uid})">X CANCELAR (90%)</span>
+            
+            <div style="font-size:0.8rem; color:var(--neon-blue);">${order.qty}x ${order.name}</div>
+            
             ${idx === 0 ? `
-                <div class="ship-progress-bg"><div class="ship-progress-fill" id="ship-fill" style="width:0%"></div></div>
+                <div class="ship-progress-bg">
+                    <div class="ship-progress-fill" id="ship-fill" style="width:0%"></div>
+                </div>
                 <div id="ship-timer-text" style="font-size:0.7rem;">Fabricando... ${order.timeLeft}s</div>` 
-            : `<div style="font-size:0.6rem; color:gray;">En espera...</div>`}
+            : `<div style="font-size:0.6rem; color:gray; margin-top:5px;">En espera...</div>`}
         </div>`).join('');
 }
 
@@ -355,6 +362,7 @@ async function registrarNaveEnBD(shipId) {
 </html>
 </body>
 </html>
+
 
 
 
