@@ -1514,6 +1514,17 @@ function renderList(section) {
         }
     });
 }
+    function mapBuildingId(gameId) {
+    const mapping = {
+        'minaFe': 'mina_metal',
+        'minaSi': 'mina_silicio',
+        'minaH3': 'mina_deuterio',
+        'plantaSolar': 'planta_solar',
+        'lab': 'laboratorio',
+        'astillero': 'astillero'
+    };
+    return mapping[gameId] || gameId;
+}
 // Asegúrate de que esto esté al final de tu <script>
 setInterval(() => {
     actualizarContadoresMejora();
@@ -1521,6 +1532,7 @@ setInterval(() => {
 </script>
 </body>
 </html>
+
 
 
 
