@@ -198,16 +198,17 @@
     </div>
 
     <script>
-    // --- VARIABLES GLOBALES ---
+ // --- VARIABLES Y ESTADO ---
 const NAVES_DISPONIBLES = [
-    { id: 'cazador_l', name: 'CAZADOR LIGERO', metal: 3000, silicio: 1000, time: 15, img: 'img/ships/interceptorarpía/interceptorarpía.png', attack: 50, shield: 10 },
-    { id: 'carguero_p', name: 'CARGUERO PEQUEÑO', metal: 2000, silicio: 2000, time: 25, img: 'https://images.unsplash.com/photo-1581822261290-991b38693d1b?w=400', attack: 5, shield: 20 }
+    { id: 'cazador_l', name: 'CAZADOR LIGERO', metal: 3000, silicio: 1000, time: 15, img: 'img/ships/interceptorarpía/interceptorarpía.png' },
+    { id: 'carguero_p', name: 'CARGUERO PEQUEÑO', metal: 2000, silicio: 2000, time: 25, img: 'https://images.unsplash.com/photo-1581822261290-991b38693d1b?w=400' }
 ];
 
 let shipQueue = [];
 let shipTimerInterval = null;
+let currentTopicId = null;
 
-// --- NAVEGACIÓN ---
+// --- NAVEGACIÓN GENERAL ---
 function showSection(id) {
     document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -215,150 +216,130 @@ function showSection(id) {
     const section = document.getElementById('sec-' + id);
     if(section) section.classList.add('active');
     
-    // Activar botón
-    event.currentTarget.classList.add('active');
+    // Activar el botón correcto
+    const btn = document.querySelector(`button[onclick="showSection('${id}')"]`);
+    if(btn) btn.classList.add('active');
 
     if(id === 'resources' || id === 'research') renderList(id);
     if(id === 'fleet') { renderAstillero(); loadHangar(); syncShipQueueFromDB(); }
+    if(id === 'forum') { cargarTemasForo(); }
 }
 
-// --- PERFIL Y FORO (FUNCIONES QUE FALTABAN) ---
+// --- SISTEMA DE FORO ---
+async function cargarTemasForo() {
+    const { data, error } = await supabaseClient.from('forum_topics').select('*').order('created_at', { ascending: false });
+    const container = document.getElementById('topics-container');
+    container.innerHTML = data.map(t => `
+        <div class="forum-topic-card" onclick="verDetalleTema('${t.id}')">
+            <h4>${t.title}</h4>
+            <small>Por: ${t.author_name} | ${new Date(t.created_at).toLocaleDateString()}</small>
+        </div>
+    `).join('');
+}
+
+function mostrarCrearTema() {
+    document.getElementById('forum-list-view').style.display = 'none';
+    document.getElementById('modal-new-topic').style.display = 'block';
+}
+
+async function guardarNuevoTema() {
+    const title = document.getElementById('topic-title-input').value;
+    const content = document.getElementById('topic-body-input').value;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    
+    // Obtener nick del jugador
+    const { data: p } = await supabaseClient.from('players').select('nickname').eq('id', user.id).single();
+
+    await supabaseClient.from('forum_topics').insert([
+        { author_id: user.id, author_name: p.nickname || 'Piloto Desconocido', title, content }
+    ]);
+
+    document.getElementById('modal-new-topic').style.display = 'none';
+    document.getElementById('forum-list-view').style.display = 'block';
+    cargarTemasForo();
+}
+
+async function verDetalleTema(id) {
+    currentTopicId = id;
+    const { data: topic } = await supabaseClient.from('forum_topics').select('*').eq('id', id).single();
+    document.getElementById('forum-list-view').style.display = 'none';
+    document.getElementById('view-topic-detail').style.display = 'block';
+    
+    document.getElementById('topic-content-full').innerHTML = `
+        <h2 style="color:var(--neon-blue)">${topic.title}</h2>
+        <p style="margin:15px 0; border-bottom:1px solid #333; padding-bottom:10px;">${topic.content}</p>
+    `;
+    cargarRespuestas(id);
+}
+
+async function cargarRespuestas(topicId) {
+    const { data: replies } = await supabaseClient.from('forum_replies').select('*').eq('topic_id', topicId);
+    document.getElementById('replies-container').innerHTML = replies.map(r => `
+        <div style="background:rgba(255,255,255,0.05); padding:10px; margin-bottom:5px; border-radius:5px;">
+            <b style="color:var(--neon-purple)">${r.author_name}:</b> ${r.content}
+        </div>
+    `).join('');
+}
+
+async function enviarRespuesta() {
+    const content = document.getElementById('reply-text').value;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: p } = await supabaseClient.from('players').select('nickname').eq('id', user.id).single();
+
+    await supabaseClient.from('forum_replies').insert([
+        { topic_id: currentTopicId, author_name: p.nickname || 'Anónimo', content }
+    ]);
+    
+    document.getElementById('reply-text').value = '';
+    cargarRespuestas(currentTopicId);
+}
+
+function cerrarDetalleTema() {
+    document.getElementById('view-topic-detail').style.display = 'none';
+    document.getElementById('forum-list-view').style.display = 'block';
+}
+
+// --- MEJORAS DE EDIFICIOS (RESTA DE RECURSOS) ---
+// Sobrescribimos la función de game.js para asegurar la resta
+async function mejorarEdificio(dbType) {
+    if (!AntiCheat.isValidAmount(userResources.metal)) return;
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const edificioData = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 0 };
+    const costo = calcularCosto(dbType, edificioData.level + 1);
+    
+    if (userResources.metal < costo) return alert("¡No tienes suficiente Ferrum!");
+
+    // RESTA REAL EN BASE DE DATOS
+    const { error } = await supabaseClient.from('players')
+        .update({ metal: userResources.metal - costo })
+        .eq('id', user.id);
+
+    if (!error) {
+        userResources.metal -= costo; // Actualización local inmediata
+        actualizarInterfazRecursos(); // Función en game.js
+        iniciarTemporizadorVisual(dbType, calcularTiempo(dbType, edificioData.level + 1), edificioData.level + 1);
+    }
+}
+
+// --- PERFIL ---
 function abrirAjustesPerfil() { document.getElementById('modal-perfil').style.display = 'flex'; }
 function cerrarAjustesPerfil() { document.getElementById('modal-perfil').style.display = 'none'; }
-
 async function guardarPerfil() {
     const nick = document.getElementById('edit-nickname').value;
     const { data: { user } } = await supabaseClient.auth.getUser();
     await supabaseClient.from('players').update({ nickname: nick }).eq('id', user.id);
-    alert("Perfil actualizado");
+    alert("Identidad actualizada, Comandante.");
     cerrarAjustesPerfil();
 }
 
-// --- ASTILLERO PERSISTENTE ---
-async function syncShipQueueFromDB() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    const { data, error } = await supabaseClient.from('ship_queue')
-        .select('*').eq('user_id', user.id).order('created_at', { ascending: true });
-
-    if (!error) {
-        shipQueue = data || [];
-        updateShipQueueUI();
-        if (shipQueue.length > 0) processShipQueue();
-    }
-}
-
-function renderAstillero() {
-    const container = document.getElementById('fleet-list-container');
-    container.innerHTML = NAVES_DISPONIBLES.map(ship => `
-        <div class="ship-card active">
-            <div class="ship-img-container"><img src="${ship.img}" class="ship-img"></div>
-            <div class="ship-info">
-                <h3 style="color:var(--neon-blue);">${ship.name}</h3>
-                <p style="font-size:0.7rem;">M: ${ship.metal} | S: ${ship.silicio} | T: ${ship.time}s</p>
-                <div style="display:flex; gap:5px; margin-top:10px;">
-                    <input type="number" id="qty-${ship.id}" class="forum-input" value="1" min="1" style="width:60px;">
-                    <button class="nav-btn" onclick="ordenarNave('${ship.id}')">CONSTRUIR</button>
-                </div>
-            </div>
-        </div>`).join('');
-}
-
-async function ordenarNave(id) {
-    const qty = parseInt(document.getElementById(`qty-${id}`).value);
-    if (qty <= 0) return;
-
-    const ship = NAVES_DISPONIBLES.find(s => s.id === id);
-    const { data: { user } } = await supabaseClient.auth.getUser();
-
-    const costM = ship.metal * qty;
-    const costS = ship.silicio * qty;
-
-    if (userResources.metal >= costM && userResources.silicio >= costS) {
-        // 1. Restar recursos
-        await supabaseClient.from('players').update({
-            metal: userResources.metal - costM,
-            silicio: userResources.silicio - costS
-        }).eq('id', user.id);
-
-        // 2. Calcular tiempo
-        let baseTime = new Date();
-        if (shipQueue.length > 0) baseTime = new Date(shipQueue[shipQueue.length - 1].finish_at);
-        const finishAt = new Date(baseTime.getTime() + (ship.time * qty * 1000)).toISOString();
-
-        // 3. Guardar en DB
-        const { data: newOrder } = await supabaseClient.from('ship_queue').insert([{
-            user_id: user.id, ship_id: ship.id, quantity: qty,
-            finish_at: finishAt, cost_metal: costM, cost_silicio: costS
-        }]).select().single();
-
-        shipQueue.push(newOrder);
-        updateShipQueueUI();
-        processShipQueue();
-        actualizarRecursosDesdeBD();
-    } else {
-        alert("Recursos insuficientes");
-    }
-}
-
-function processShipQueue() {
-    if (shipQueue.length === 0 || shipTimerInterval) return;
-
-    shipTimerInterval = setInterval(async () => {
-        const current = shipQueue[0];
-        const restante = Math.floor((new Date(current.finish_at) - new Date()) / 1000);
-
-        const txt = document.getElementById('ship-timer-text');
-        const fill = document.getElementById('ship-fill');
-        
-        if (txt) txt.innerText = `Fabricando... ${restante}s`;
-        if (fill) fill.style.width = "50%"; // Puedes calcular % real aquí
-
-        if (restante <= 0) {
-            clearInterval(shipTimerInterval);
-            shipTimerInterval = null;
-            await registrarNaveEnBD(current.ship_id, current.quantity);
-            await supabaseClient.from('ship_queue').delete().eq('id', current.id);
-            shipQueue.shift();
-            updateShipQueueUI();
-            loadHangar();
-            processShipQueue();
-        }
-    }, 1000);
-}
-
-async function registrarNaveEnBD(shipId, quantity) {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    const { data: existing } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id).eq('ship_id', shipId).single();
-    if (existing) {
-        await supabaseClient.from('user_fleet').update({ quantity: existing.quantity + quantity }).eq('id', existing.id);
-    } else {
-        await supabaseClient.from('user_fleet').insert([{ user_id: user.id, ship_id: shipId, quantity: quantity }]);
-    }
-}
-
-function updateShipQueueUI() {
-    const container = document.getElementById('ship-queue-list');
-    if (shipQueue.length === 0) {
-        container.innerHTML = "<p style='opacity:0.4; font-size:0.8rem; padding:20px;'>ASTILLERO INACTIVO</p>";
-        return;
-    }
-    container.innerHTML = shipQueue.map((order, idx) => `
-        <div class="queue-item">
-            <div style="font-size:0.8rem; color:var(--neon-blue);">${order.quantity}x ${order.ship_id}</div>
-            ${idx === 0 ? `
-                <div class="ship-progress-bg"><div class="ship-progress-fill" id="ship-fill"></div></div>
-                <div id="ship-timer-text" style="font-size:0.7rem;">Iniciando...</div>` 
-            : `<div style="font-size:0.6rem; color:gray;">En espera...</div>`}
-        </div>`).join('');
-}
-
-// --- INICIO GLOBAL ---
+// --- INICIALIZACIÓN ---
 (async () => {
     await syncBuildingsFromSupabase();
     await actualizarRecursosDesdeBD();
     renderList('resources');
-    // Bucle de producción cada 8 seg
-    setInterval(actualizarRecursosDesdeBD, 8000);
+    // Actualización automática de recursos cada 10 segundos
+    setInterval(actualizarRecursosDesdeBD, 10000);
 })();
 
     </script>
@@ -366,6 +347,7 @@ function updateShipQueueUI() {
 </html>
 </body>
 </html>
+
 
 
 
