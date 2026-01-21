@@ -1273,7 +1273,7 @@
         showSection('overview');
     </script>
 <script>
-// --- CONFIGURACIÓN Y MAPEO ---
+// --- CONFIGURACIÓN ---
 const mapBuildingIdInv = {
     minaFe: 'mina_metal',
     minaSi: 'mina_silicio',
@@ -1284,68 +1284,67 @@ const mapBuildingIdInv = {
 };
 
 function mapBuildingId(gameId) { return mapBuildingIdInv[gameId] || gameId; }
-
-// FÓRMULAS ESCALABLES
 const getUpgradeCost = (level) => Math.floor(500 * Math.pow(1.6, level - 1));
 const getUpgradeTime = (level) => (5 * Math.pow(2, level - 1)) * 60 * 1000; 
 
 let dbBuildingsCache = []; 
 let userResources = { metal: 0, silicio: 0, deuterio: 0 };
 
-// --- LÓGICA DE RECURSOS (LECTURA DE BD) ---
-
+// --- FUNCIÓN DE RECURSOS (CORREGIDA) ---
 async function actualizarRecursosDesdeBD() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
 
-    // Leemos de Supabase (las columnas se llaman metal, silicio, deuterio)
-    const { data: profile, error } = await supabaseClient
-        .from('profiles')
-        .select('metal, silicio, deuterio')
-        .eq('id', user.id)
-        .single();
+        const { data: profile, error } = await supabaseClient
+            .from('profiles')
+            .select('metal, silicio, deuterio')
+            .eq('id', user.id)
+            .single();
 
-    if (error) {
-        console.error("Error al cargar perfil:", error);
-        return;
-    }
+        if (error) throw error;
 
-    if (profile) {
-        // ACTUALIZAMOS LA VARIABLE GLOBAL (esto es lo que lee la función de mejorar)
-        userResources.metal = profile.metal;
-        userResources.silicio = profile.silicio;
-        userResources.deuterio = profile.deuterio;
+        if (profile) {
+            userResources.metal = profile.metal;
+            userResources.silicio = profile.silicio;
+            userResources.deuterio = profile.deuterio;
 
-        // ACTUALIZAMOS EL HTML (Usando tus IDs exactos)
-        const elFerrum = document.getElementById('res-ferrum');
-        if(elFerrum) elFerrum.innerText = Math.floor(userResources.metal).toLocaleString();
-        
-        const elSilice = document.getElementById('res-silice');
-        if(elSilice) elSilice.innerText = Math.floor(userResources.silicio).toLocaleString();
-        
-        const elH3 = document.getElementById('res-h3');
-        if(elH3) elH3.innerText = Math.floor(userResources.deuterio).toLocaleString();
-        
-        console.log("Recursos actualizados:", userResources);
+            // Inyectar en el HTML
+            if(document.getElementById('res-ferrum')) 
+                document.getElementById('res-ferrum').innerText = Math.floor(profile.metal).toLocaleString();
+            if(document.getElementById('res-silice')) 
+                document.getElementById('res-silice').innerText = Math.floor(profile.silicio).toLocaleString();
+            if(document.getElementById('res-h3')) 
+                document.getElementById('res-h3').innerText = Math.floor(profile.deuterio).toLocaleString();
+        }
+    } catch (e) {
+        console.error("Error en recursos:", e.message);
     }
 }
 
-// --- BASE DE DATOS Y RENDERIZADO ---
-
+// --- GESTIÓN DE EDIFICIOS ---
 async function syncBuildingsFromSupabase() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
 
-    const { data } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
-    if (data) {
-        dbBuildingsCache = data;
-        data.forEach(row => {
-            const bId = Object.keys(mapBuildingIdInv).find(key => mapBuildingIdInv[key] === row.building_type);
-            const building = game.buildings.find(b => b.id === bId);
-            if (building) building.lvl = row.level;
-        });
-        renderList('resources');
-        renderList('research');
+        const { data, error } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
+        if (error) throw error;
+
+        if (data) {
+            dbBuildingsCache = data;
+            data.forEach(row => {
+                const bId = Object.keys(mapBuildingIdInv).find(key => mapBuildingIdInv[key] === row.building_type);
+                const building = game.buildings.find(b => b.id === bId);
+                if (building) building.lvl = row.level;
+            });
+            renderList('resources');
+            renderList('research');
+        }
+    } catch (e) {
+        console.error("Error en edificios:", e.message);
+        // Si falla, al menos pintamos la lista básica para que no se quede en "Cargando"
+        renderList('resources'); 
     }
 }
 
@@ -1356,165 +1355,53 @@ function renderList(sectionId) {
 
     game.buildings.filter(b => b.section === sectionId).forEach(b => {
         const currentCost = getUpgradeCost(b.lvl);
+        // Importante: El ID del botón debe coincidir con el mapeo
+        const dbId = mapBuildingId(b.id);
         container.innerHTML += `
             <div class="build-card">
                 <span class="lvl-badge">NIV ${b.lvl}</span>
-                <div class="build-img-container">
-                    ${b.img ? `<img src="${b.img}" alt="${b.name}">` : ''}
-                </div>
+                <div class="build-img-container"></div>
                 <div class="build-card-content">
                     <h4 style="color:var(--neon-blue);">${b.name}</h4>
                     <p class="lore-text">${b.lore}</p>
-                    <button id="btn-${mapBuildingId(b.id)}" class="btn-upgrade" 
-                        onclick="mejorarEdificio('${mapBuildingId(b.id)}')">
-                        Cargando...
+                    <button id="btn-${dbId}" class="btn-upgrade" onclick="mejorarEdificio('${dbId}')">
+                        MEJORAR
                     </button>
-                    <div style="margin-top:10px; font-size:0.8em; color:#00f2ff; font-family:'Orbitron', sans-serif;">
-                        COSTE: ${currentCost} Fe | TIEMPO: ${Math.floor(getUpgradeTime(b.lvl)/60000)}m
+                    <div style="margin-top:10px; font-size:0.8em; color:#00f2ff;">
+                        COSTE: ${currentCost} Fe
                     </div>
                 </div>
             </div>`;
     });
-    updateButtonsPeriodically();
 }
 
-function updateButtonsPeriodically() {
-    dbBuildingsCache.forEach(dbStatus => {
-        const btn = document.getElementById(`btn-${dbStatus.building_type}`);
-        if (!btn) return;
-
-        const ahora = new Date();
-        const finMejora = dbStatus.upgrade_end ? new Date(dbStatus.upgrade_end) : null;
-
-        if (dbStatus.is_upgrading && finMejora && finMejora > ahora) {
-            const diff = finMejora - ahora;
-            const horas = Math.floor(diff / (1000 * 60 * 60));
-            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const secs = Math.floor((diff % (1000 * 60)) / 1000);
-            
-            let tiempoTexto = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-            if(horas > 0) tiempoTexto = `${horas}h ${tiempoTexto}`;
-
-            btn.innerText = `FALTAN ${tiempoTexto}`;
-            btn.disabled = true;
-            btn.style.opacity = "0.5";
-        } else {
-            const bId = Object.keys(mapBuildingIdInv).find(key => mapBuildingIdInv[key] === dbStatus.building_type);
-            const building = game.buildings.find(b => b.id === bId);
-            btn.innerText = `MEJORAR AL NIV ${building.lvl + 1}`;
-            btn.disabled = false;
-            btn.style.opacity = "1";
-        }
-    });
-}
-
-// --- ACCIONES ---
-async function mejorarEdificio(buildingId) {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    const building = dbBuildingsCache.find(b => b.building_type === buildingId);
-    
-    if (!user || !building) return;
-
-    // Costes
-    const costeMetal = getUpgradeCost(building.level);
-    const costeSilice = Math.floor(costeMetal * 0.6); 
-    const costeH3 = Math.floor(costeMetal * 0.3); 
-
-    // VALIDACIÓN (Ahora sí leerá userResources correctamente)
-    if (userResources.metal < costeMetal || 
-        userResources.silicio < costeSilice || 
-        userResources.deuterio < costeH3) {
-        
-        alert(`⚠️ Recursos insuficientes:\n` +
-              `Ferrum: ${costeMetal} (Tienes: ${Math.floor(userResources.metal)})\n` +
-              `Sílice: ${costeSilice} (Tienes: ${Math.floor(userResources.silicio)})\n` +
-              `H3: ${costeH3} (Tienes: ${Math.floor(userResources.deuterio)})`);
-        return;
-    }
-
-    // Si pasa la validación, procedemos al cobro
-    const { error: resError } = await supabaseClient
-        .from('profiles')
-        .update({ 
-            metal: userResources.metal - costeMetal,
-            silicio: userResources.silicio - costeSilice,
-            deuterio: userResources.deuterio - costeH3
-        })
-        .eq('id', user.id);
-
-    if (resError) {
-        alert("Error en la transacción");
-        return;
-    }
-
-    // Iniciar tiempo de mejora
-    const upgradeEnd = new Date(Date.now() + getUpgradeTime(building.level));
-
-    const { error: upgradeError } = await supabaseClient
-        .from('buildings')
-        .update({
-            is_upgrading: true,
-            upgrade_start: new Date().toISOString(),
-            upgrade_end: upgradeEnd.toISOString()
-        })
-        .eq('id', building.id);
-
-    if (!upgradeError) {
-        await actualizarRecursosDesdeBD();
-        await syncBuildingsFromSupabase();
-    }
-}
-
-
-async function finalizarMejoras() {
-    const ahora = new Date().toISOString();
-    const { data: terminados } = await supabaseClient
-        .from('buildings').select('*').eq('is_upgrading', true).lte('upgrade_end', ahora);
-
-    if (terminados && terminados.length > 0) {
-        for (const b of terminados) {
-            await supabaseClient.from('buildings').update({
-                level: b.level + 1,
-                is_upgrading: false,
-                upgrade_start: null, upgrade_end: null
-            }).eq('id', b.id);
-        }
-        await syncBuildingsFromSupabase();
-    }
-}
-
-
-// --- INICIALIZACIÓN ---
+// --- INICIALIZACIÓN CRÍTICA ---
 (async () => {
-    console.log("Iniciando sistemas...");
+    console.log("Sistema iniciando...");
     initSelectors();
     showSection('overview');
 
-    // Verificamos el usuario antes de nada
+    // 1. Verificar sesión
     const { data: { user } } = await supabaseClient.auth.getUser();
-    
     if (!user) {
-        console.error("ERROR: No hay usuario autenticado. Redirigiendo...");
-        // window.location.href = 'index.html'; // Descomenta esto si quieres que te eche si no estas logueado
+        alert("Sesión no detectada. Por favor, entra de nuevo.");
+        window.location.href = 'index.html';
         return;
     }
 
-    console.log("Usuario detectado:", user.email);
-
-    // Si hay usuario, cargamos todo
+    // 2. Cargar datos
     await syncBuildingsFromSupabase();
     await actualizarRecursosDesdeBD();
-    
-    setInterval(actualizarRecursosDesdeBD, 5000); 
-    setInterval(updateButtonsPeriodically, 1000); 
+
+    // 3. Arrancar bucles
+    setInterval(actualizarRecursosDesdeBD, 5000);
     setInterval(finalizarMejoras, 5000);
-    
-    console.log("Sistemas listos.");
+    console.log("Sistemas operativos para:", user.email);
 })();
 </script>
-
 </body>
 </html>
+
 
 
 
