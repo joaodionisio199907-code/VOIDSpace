@@ -1297,7 +1297,7 @@ async function actualizarRecursosDesdeBD() {
         if (!user) return;
 
         const { data: profile, error } = await supabaseClient
-            .from('profiles')
+            .from('players')
             .select('metal, silicio, deuterio')
             .eq('id', user.id)
             .single();
@@ -1401,6 +1401,7 @@ function renderList(sectionId) {
 </script>
 </body>
 </html>
+
 
 
 
