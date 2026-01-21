@@ -459,7 +459,7 @@
                 const dbB = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 1, is_upgrading: false };
                 container.innerHTML += `
                     <div class="building-card">
-                        <img src="${b.img}" class="building-img" onerror="this.src='https://via.placeholder.com/300x160?text=${b.name}'">
+                        <img src="" class="building-img"">
                         <div class="building-info">
                             <span class="building-lvl">LVL ${dbB.level}</span>
                             <h3 class="building-name">${b.name}</h3>
@@ -498,6 +498,7 @@
     </script>
 </body>
 </html>
+
 
 
 
