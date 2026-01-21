@@ -12,1543 +12,366 @@
 
         async function validarAcceso() {
             const { data: { user }, error } = await supabaseClient.auth.getUser();
-            
-            // Si hay error o no hay usuario logueado
             if (error || !user) {
-                console.log("Acceso no autorizado. Redirigiendo al Nexo...");
                 window.location.href = 'index.html';
-            } else {
-                console.log("Operativo verificado:", user.email);
-                // Aquí podrías disparar una función para cargar los datos del usuario
             }
         }
         validarAcceso();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
         :root {
             --neon-blue: #00f2ff;
             --neon-purple: #bc13fe;
-            --panel-bg: rgba(1, 2, 8, 0.9);
-            --border-glow: rgba(0, 242, 255, 0.3);
-            --text-main: #e0e0e0;
-            --holo-bg: rgba(0, 242, 255, 0.1);
-            --terminal-green: #00ff41;
-            --wiki-gold: #f1c40f; /* Color para la Wiki */
+            --dark-bg: #0a0b10;
+            --card-bg: rgba(16, 18, 27, 0.8);
+            --wiki-gold: #ffd700;
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #010208 url('https://www.transparenttextures.com/patterns/stardust.png');
-            color: var(--text-main);
-            font-family: 'Rajdhani', sans-serif;
-            margin: 0;
-            display: grid;
-            grid-template-areas: 
-                "header header header"
-                "nav main aside";
-            grid-template-columns: 200px 1fr 300px;
-            grid-template-rows: 85px 100vh;
-            overflow: hidden;
-        }
-
-        header {
-            grid-area: header;
-            background: rgba(0, 0, 0, 0.9);
-            border-bottom: 1px solid var(--neon-blue);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 0 20px;
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
-            z-index: 100;
-        }
-
-        .btn-upgrade:disabled {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border-color: #555 !important;
-    color: #888 !important;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-        .resource-item { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px;
-            min-width: 150px;
-        }
-
-        .res-icon-wrapper {
-            position: relative;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-      
-        .btn-upgrade:disabled {
-    border-color: #444 !important;
-    color: #666 !important;
-    background: rgba(0,0,0,0.5) !important;
-    box-shadow: none !important;
-    pointer-events: none;
-}
-
-        .res-icon-wrapper::before {
-            content: '';
-            position: absolute;
-            width: 35px;
-            height: 35px;
-            background: radial-gradient(circle, var(--neon-blue) 0%, transparent 70%);
-            border-radius: 50%;
-            filter: blur(8px);
-            opacity: 0.5;
-            animation: pulseAura 2s infinite ease-in-out;
-            z-index: 1;
-        }
-
-        .res-icon-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            position: relative;
-            z-index: 2;
-            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
-            animation: floatMineral 4s infinite ease-in-out;
-        }
-
-        @keyframes pulseAura {
-            0%, 100% { transform: scale(0.8); opacity: 0.3; }
-            50% { transform: scale(1.3); opacity: 0.6; }
-        }
-
-        @keyframes floatMineral {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-        }
-
-        .res-text-block { text-align: left; }
-        .res-text-block span { display: block; font-family: 'Orbitron'; font-size: 0.65rem; color: var(--neon-blue); }
-        .res-value { font-size: 1.1rem; font-weight: bold; text-shadow: 0 0 5px var(--neon-blue); }
-        .energy-status { color: #2ecc71; }
-
-        nav {
-            grid-area: nav;
-            background: var(--panel-bg);
-            border-right: 1px solid var(--border-glow);
-            padding: 20px 10px;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            color: #888;
-            text-decoration: none;
-            transition: 0.3s;
-            border-radius: 5px;
-            margin-bottom: 5px;
-            font-family: 'Orbitron';
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-
-        .nav-link i { margin-right: 15px; width: 20px; text-align: center; }
-        .nav-link:hover, .nav-link.active {
-            color: var(--neon-blue);
-            background: rgba(0, 242, 255, 0.05);
-            box-shadow: inset 2px 0 0 var(--neon-blue);
-        }
-
-        main {
-            grid-area: main;
-            padding: 30px;
-            overflow-y: auto;
-            background: radial-gradient(circle at center, #0a192f44 0%, transparent 70%);
-        }
-
-        .game-section {
-            display: none;
-            animation: fadeInRight 0.4s ease-out;
-        }
-        .game-section.active { display: block; }
-
-        @keyframes fadeInRight {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .planet-view {
-            position: relative;
-            width: 100%;
-            height: 400px;
-            background: url('https://images.unsplash.com/photo-1614732414444-096e5f1122d5?auto=format&fit=crop&q=80&w=1000') center/cover;
-            border-radius: 20px;
-            border: 1px solid var(--border-glow);
-            margin-bottom: 30px;
-            display: flex;
-            align-items: flex-end;
-            padding: 20px;
-        }
-
-        .planet-info {
-            background: rgba(0,0,0,0.7);
-            padding: 15px;
-            border-radius: 10px;
-            backdrop-filter: blur(5px);
-        }
-
-        .buildings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 25px;
-        }
-
-        .build-card {
-            background: var(--panel-bg);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 0;
-            border-radius: 12px;
-            text-align: center;
-            transition: 0.3s;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .build-card:hover { border-color: var(--neon-purple); transform: translateY(-5px); }
-        
-        .build-img-container {
-            width: 100%;
-            height: 240px;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-bottom: 2px solid var(--border-glow);
-            overflow: hidden;
-        }
-
-        .build-img-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: 0.5s;
-        }
-
-        .build-card-content { padding: 15px; }
-
-        .lvl-badge {
-            background: var(--neon-purple);
-            padding: 4px 10px;
-            border-radius: 0 0 0 10px;
-            font-size: 0.75rem;
-            position: absolute;
-            top: 0;
-            right: 0;
-            z-index: 2;
-            font-family: 'Orbitron';
-            box-shadow: 0 0 10px rgba(188, 19, 254, 0.5);
-        }
-
-        aside {
-            grid-area: aside;
-            background: var(--panel-bg);
-            border-left: 1px solid var(--border-glow);
-            padding: 20px;
-        }
-
-        .event-card {
-            background: rgba(255,255,255,0.03);
-            border-left: 3px solid var(--neon-blue);
-            padding: 10px;
-            margin-bottom: 15px;
-            font-size: 0.85rem;
-        }
-
-        .timer { color: var(--neon-blue); font-family: 'Orbitron'; font-size: 0.9rem; }
-
-        .btn-upgrade {
-            background: transparent;
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-blue);
-            padding: 8px 10px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-            font-family: 'Orbitron';
-            transition: 0.3s;
-        }
-
-        .btn-upgrade:hover:not(:disabled) { background: var(--neon-blue); color: black; }
-        .btn-upgrade:disabled { border-color: #444; color: #444; cursor: not-allowed; }
-
-        .mission-panel {
-            background: rgba(188, 19, 254, 0.1);
-            border: 1px solid var(--neon-purple);
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 10px;
-        }
-
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .confirm-modal {
-            background: #050a14;
-            border: 2px solid var(--neon-blue);
-            padding: 30px;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 0 30px var(--neon-blue);
-        }
-
-        .holo-chat-trigger {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background: var(--holo-bg);
-            border: 2px solid var(--neon-blue);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--neon-blue);
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 0 15px var(--border-glow);
-            transition: 0.3s;
-            z-index: 1100;
-            backdrop-filter: blur(5px);
-        }
-
-        #holo-floating-chat {
-            position: fixed;
-            bottom: 100px;
-            right: 30px;
-            width: 300px;
-            height: 450px;
-            background: rgba(1, 2, 8, 0.95);
-            border: 1px solid var(--neon-blue);
-            border-radius: 15px;
-            display: none; 
-            flex-direction: column;
-            z-index: 1090;
-            box-shadow: 0 0 40px rgba(0, 242, 255, 0.2);
-            backdrop-filter: blur(15px);
-            animation: fadeInUp 0.3s ease;
-        }
-
-        .chat-header {
-            padding: 15px;
-            border-bottom: 1px solid var(--border-glow);
-            font-family: 'Orbitron';
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: var(--neon-blue);
-            font-size: 0.8rem;
-        }
-
-        .friends-list {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 10px;
-        }
-
-        .friend-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            transition: 0.2s;
-            cursor: pointer;
-        }
-
-        .friend-item:hover { background: rgba(0, 242, 255, 0.1); }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        .online { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
-        .offline { background: #555; }
-
-        .chat-footer {
-            padding: 15px;
-            border-top: 1px solid var(--border-glow);
-            background: rgba(0,0,0,0.3);
-        }
-
-        .btn-add-friend {
-            width: 100%;
-            background: transparent;
-            border: 1px dashed var(--neon-purple);
-            color: var(--neon-purple);
-            padding: 8px;
-            font-family: 'Orbitron';
-            font-size: 0.7rem;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        /* --- ESTILOS EXCLUSIVOS SECCIÓN MAPA --- */
-        .map-container {
-            width: 100%;
-            height: 600px;
-            background: #000 url('https://www.transparenttextures.com/patterns/asfalt-dark.png');
-            position: relative;
-            overflow: hidden;
-            border: 1px solid var(--border-glow);
-            border-radius: 10px;
-            cursor: crosshair;
-        }
-
-        .stellar-grid {
-            position: absolute;
-            width: 200%; height: 200%;
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Share Tech Mono', monospace;
+            overflow-x: hidden;
             background-image: 
-                linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-            transform: translate(-25%, -25%);
+                radial-gradient(circle at 50% 50%, rgba(188, 19, 254, 0.05) 0%, transparent 80%),
+                url('https://www.transparenttextures.com/patterns/stardust.png');
         }
 
-        .map-objects-layer {
-            position: absolute;
-            width: 100%; height: 100%;
-            z-index: 5;
-        }
+        .main-container { display: flex; height: 100vh; padding: 20px; gap: 20px; }
 
-        .stellar-object {
-            position: absolute;
-            width: 80px;
-            height: 80px;
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: 0.3s;
-        }
-
-        .planet-body {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #555, #000);
-            box-shadow: 0 0 15px rgba(255,255,255,0.1);
-            position: relative;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .planet-body:hover { transform: scale(1.2); }
-
-        .planet-body.active { 
-            box-shadow: 0 0 25px var(--neon-blue);
-            border: 2px solid var(--neon-blue);
-        }
-
-        .stellar-object span {
-            font-family: 'Orbitron';
-            font-size: 0.6rem;
-            margin-top: 8px;
-            text-shadow: 0 0 5px #000;
-            text-align: center;
-            white-space: nowrap;
-        }
-
-        .map-side-panel {
-            position: absolute;
-            top: 20px; right: 20px;
-            bottom: 20px;
-            width: 220px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            z-index: 30;
-        }
-
-        .map-controls, .map-planet-list {
-            background: rgba(1, 2, 8, 0.9);
-            border: 1px solid var(--border-glow);
-            padding: 15px;
             backdrop-filter: blur(10px);
         }
 
-        .map-planet-list {
-            flex-grow: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .list-planet-item {
-            padding: 8px;
-            border: 1px solid rgba(0, 242, 255, 0.1);
-            background: rgba(255,255,255,0.02);
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .list-planet-item:hover { background: rgba(0, 242, 255, 0.1); }
-        .list-planet-item.active { border-color: var(--neon-blue); background: rgba(0, 242, 255, 0.15); }
-
-        .list-planet-name { font-size: 0.75rem; font-family: 'Orbitron'; color: var(--text-main); }
-        .list-planet-coords { font-size: 0.6rem; color: #666; }
-
-        .map-nav-header {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 15px;
-            align-items: center;
-        }
-
-        .map-nav-header select {
-            background: #000;
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-blue);
-            font-family: 'Orbitron';
-            font-size: 0.7rem;
-            padding: 5px;
-            flex-grow: 1;
-        }
-
-        /* --- ESTILOS MERCADO Y BUSCADOR --- */
-        .market-search-container {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            background: #000;
-            border: 1px solid var(--terminal-green);
-            padding: 5px 15px;
-        }
-
-        .market-search-container i { color: var(--terminal-green); margin-right: 10px; }
-
-        #market-search-input {
+        .nav-btn {
             background: transparent;
-            border: none;
-            color: var(--terminal-green);
-            font-family: 'Share Tech Mono', monospace;
-            width: 100%;
-            outline: none;
-            font-size: 0.9rem;
-        }
-
-        .market-terminal-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            height: 550px;
-        }
-
-        .terminal-window {
-            background: #000;
-            border: 3px solid #333;
-            border-radius: 5px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .terminal-header {
-            background: #333;
-            color: #eee;
-            padding: 5px 15px;
-            font-family: 'Share Tech Mono', monospace;
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-family: 'Orbitron', sans-serif;
             font-size: 0.8rem;
             display: flex;
-            justify-content: space-between;
-        }
-
-        .terminal-content {
-            flex-grow: 1;
-            background: radial-gradient(circle, #0c1a10 0%, #000 100%);
-            padding: 15px;
-            font-family: 'Share Tech Mono', monospace;
-            color: var(--terminal-green);
-            overflow-y: auto;
-            position: relative;
-        }
-
-        .market-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-        }
-
-        .market-table th { text-align: left; border-bottom: 1px solid var(--terminal-green); padding: 8px; }
-        .market-table td { padding: 8px; border-bottom: 1px solid rgba(0, 255, 65, 0.1); }
-
-        .btn-market {
-            background: transparent;
-            border: 1px solid var(--terminal-green);
-            color: var(--terminal-green);
-            font-family: 'Share Tech Mono', monospace;
-            padding: 2px 6px;
-            cursor: pointer;
-        }
-
-        .btn-market:hover { background: var(--terminal-green); color: #000; }
-
-        /* --- ESTILOS WIKI --- */
-        .wiki-container {
-            background: rgba(5, 10, 20, 0.85);
-            border: 1px solid var(--wiki-gold);
-            border-radius: 15px;
-            padding: 20px;
-            min-height: 80vh;
-            box-shadow: inset 0 0 50px rgba(241, 196, 15, 0.05);
-        }
-
-        .wiki-nav {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            border-bottom: 1px solid rgba(241, 196, 15, 0.3);
-            padding-bottom: 10px;
-        }
-
-        .wiki-tab {
-            padding: 10px 20px;
-            font-family: 'Orbitron';
-            color: #888;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .wiki-tab.active {
-            color: var(--wiki-gold);
-            border: 1px solid var(--wiki-gold);
-            background: rgba(241, 196, 15, 0.1);
-            clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%);
-        }
-
-        .ship-wiki-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-        }
-
-        .ship-card-wiki {
-            background: linear-gradient(135deg, rgba(20, 25, 35, 0.95) 0%, rgba(5, 10, 15, 1) 100%);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-left: 3px solid var(--wiki-gold);
-            padding: 15px;
-            position: relative;
-            transition: 0.3s;
-        }
-
-        .ship-card-wiki:hover {
-            transform: translateY(-5px);
-            border-color: var(--wiki-gold);
-        }
-
-        .ship-img-frame {
-            width: 100%; height: 150px;
-            background: #000 url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
-            border: 1px solid #222;
-            margin-bottom: 15px;
-            position: relative;
-            overflow: hidden;
-            display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 10px;
         }
 
-        .ship-img-frame img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .ship-img-frame::before {
-            content: "SCAN_ID: " attr(data-id);
-            position: absolute; top: 5px; right: 8px;
-            font-family: 'Share Tech Mono'; font-size: 0.6rem;
-            color: var(--wiki-gold); opacity: 0.7;
-            z-index: 5;
-        }
-
-        .ship-stats-wiki {
-            margin-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 10px;
-        }
-
-        .stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-        .stat-label { font-family: 'Orbitron'; font-size: 0.6rem; width: 40px; color: #888; }
-        .stat-bar-bg { flex-grow: 1; height: 3px; background: #111; }
-        .stat-bar-fill { height: 100%; background: var(--wiki-gold); box-shadow: 0 0 5px var(--wiki-gold); }
-
-        .blink { animation: blink-anim 1s step-end infinite; }
-        @keyframes blink-anim { 50% { opacity: 0; } }
-
-        /* --- ESTILOS INVENTARIO (NUEVO) --- */
-        .inventory-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 15px;
-        }
-
-        .inventory-item {
-            aspect-ratio: 1/1;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid var(--border-glow);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .inventory-item:hover {
+        .nav-btn:hover, .nav-btn.active {
             background: rgba(0, 242, 255, 0.1);
-            box-shadow: 0 0 15px var(--border-glow);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+            transform: translateX(5px);
         }
 
-        .inventory-item i {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
+        /* Content Area */
+        .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+        /* Top Bar */
+        .top-bar {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .resource-item { display: flex; flex-direction: column; align-items: center; }
+        .res-label { font-size: 0.7rem; color: var(--neon-blue); margin-bottom: 5px; }
+        .res-value { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; text-shadow: 0 0 10px var(--neon-blue); }
+
+        /* Game Sections */
+        .game-section { display: none; }
+        .game-section.active { display: block; }
+
+        /* Building Grid y Cards */
+        .building-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 10px;
+        }
+
+        .building-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .building-card:hover {
+            border-color: var(--neon-blue);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 242, 255, 0.1);
+        }
+
+        .building-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+        }
+
+        .building-info { padding: 20px; }
+        .building-name { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--neon-blue); margin-bottom: 5px; }
+        .building-lvl { float: right; font-size: 0.8rem; background: var(--neon-blue); color: black; padding: 2px 8px; border-radius: 4px; }
+        .building-lore { font-size: 0.8rem; color: #aaa; margin: 15px 0; line-height: 1.4; }
+
+        .btn-upgrade {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--neon-blue);
             color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 5px;
         }
 
-        .item-qty {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            font-family: 'Share Tech Mono';
-            font-size: 0.7rem;
-            background: rgba(0,0,0,0.8);
-            padding: 1px 4px;
-            border-radius: 3px;
+        .btn-upgrade:hover:not(:disabled) {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-blue);
         }
 
-        .item-name-tag {
-            font-size: 0.55rem;
-            text-transform: uppercase;
-            font-family: 'Orbitron';
-            text-align: center;
-            padding: 0 5px;
+        .btn-upgrade:disabled {
+            border-color: #444;
+            color: #666;
+            cursor: not-allowed;
         }
 
-        /* --- OPTIMIZACIÓN MÓVIL (Sin alterar diseño original) --- */
-        @media (max-width: 900px) {
-            body {
-                grid-template-areas: 
-                    "header"
-                    "main"
-                    "nav";
-                grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr 70px;
-                height: 100vh;
-            }
-
-            header {
-                flex-wrap: wrap;
-                height: auto;
-                padding: 10px;
-                justify-content: center;
-                gap: 10px;
-            }
-
-            .resource-item {
-                min-width: 120px;
-                gap: 5px;
-            }
-
-            .res-icon-wrapper {
-                width: 30px;
-                height: 30px;
-            }
-
-            nav {
-                display: flex;
-                flex-direction: row;
-                overflow-x: auto;
-                padding: 0;
-                border-right: none;
-                border-top: 1px solid var(--border-glow);
-                background: rgba(0, 0, 0, 0.95);
-                z-index: 100;
-            }
-
-            .nav-link {
-                flex-direction: column;
-                justify-content: center;
-                min-width: 80px;
-                margin-bottom: 0;
-                font-size: 0.6rem;
-                padding: 5px;
-                text-align: center;
-            }
-
-            .nav-link i {
-                margin-right: 0;
-                margin-bottom: 4px;
-                font-size: 1.2rem;
-            }
-
-            aside {
-                display: none;
-            }
-
-            main {
-                padding: 15px;
-                padding-bottom: 20px;
-            }
-
-            .buildings-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .market-terminal-container {
-                grid-template-columns: 1fr;
-                height: auto;
-            }
-
-            .terminal-window {
-                height: 300px;
-            }
-
-            .planet-view {
-                height: 250px;
-            }
-
-            .map-container {
-                height: 400px;
-            }
-
-            .map-side-panel {
-                position: relative;
-                top: 0; right: 0; bottom: 0;
-                width: 100%;
-                margin-top: 10px;
-            }
-
-            .ship-wiki-grid {
-                grid-template-columns: 1fr;
-            }
-
-            #holo-floating-chat {
-                width: 85%;
-                right: 7.5%;
-                bottom: 80px;
-            }
+        .btn-completar {
+            border-color: #00ff88 !important;
+            color: #00ff88 !important;
         }
 
-        @media (max-width: 480px) {
-            .resource-item {
-                min-width: 40%;
-            }
-            .res-value {
-                font-size: 0.9rem;
-            }
+        .btn-completar:hover {
+            background: #00ff88 !important;
+            color: black !important;
+            box-shadow: 0 0 20px #00ff88 !important;
         }
     </style>
 </head>
 <body>
 
-    <div id="modal-confirm" class="modal-overlay">
-        <div class="confirm-modal animate__animated animate__zoomIn">
-            <h2 id="modal-title" style="font-family: 'Orbitron'; color: var(--neon-blue);">¿MEJORAR ESTRUCTURA?</h2>
-            <div id="modal-body" style="margin: 20px 0; font-size: 0.9rem; line-height: 1.5;"></div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn-upgrade" id="btn-modal-accept">ACEPTAR</button>
-                <button class="btn-upgrade" style="border-color: #ff4444; color: #ff4444;" onclick="closeModal()">NEGAR</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="holo-chat-trigger" onclick="toggleFloatingChat()">
-        <i class="fas fa-user-friends"></i>
-    </div>
-
-    <div id="holo-floating-chat">
-        <div class="chat-header">
-            <span><i class="fas fa-satellite"></i> ENLACE SOCIAL</span>
-            <i class="fas fa-times" onclick="toggleFloatingChat()" style="cursor:pointer; opacity: 0.5;"></i>
-        </div>
-        <div class="friends-list" id="friends-list-container">
-            <div class="friend-item">
-                <div class="status-dot online"></div>
-                <div style="flex-grow: 1;">
-                    <div style="font-size: 0.85rem; font-weight: bold;">COMANDANTE_ZOD</div>
-                    <div style="font-size: 0.65rem; color: #888;">Sector [2:11:4]</div>
-                </div>
-                <i class="far fa-comment-alt" style="color: var(--neon-blue);"></i>
-            </div>
-        </div>
-        <div class="chat-footer">
-            <button class="btn-add-friend" onclick="alert('Buscando señal de nuevos operadores...')">
-                <i class="fas fa-plus"></i> AÑADIR JUGADOR
-            </button>
-        </div>
-    </div>
-
-    <header>
-        <div class="resource-item">
-            <div class="res-icon-wrapper">
-                <img src="img/minaferrum/mineral/ferrum.png" alt="Fe">
-            </div>
-            <div class="res-text-block">
-                <span>FERRUM</span>
-                <div class="res-value" id="res-ferrum">500</div>
-            </div>
-        </div>
-
-        <div class="resource-item">
-            <div class="res-icon-wrapper">
-                <img src="img/SILICE/silice.png" alt="Si">
-            </div>
-            <div class="res-text-block">
-                <span>SÍLICE</span>
-                <div class="res-value" id="res-silice">300</div>
-            </div>
-        </div>
-
-        <div class="resource-item">
-            <div class="res-icon-wrapper">
-                <img src="img/isotopoh3/isotopoh3.png" alt="H3">
-            </div>
-            <div class="res-text-block">
-                <span>ISÓTOPO-H3</span>
-                <div class="res-value" id="res-h3">0</div>
-            </div>
-        </div>
-
-        <div class="resource-item">
-            <div class="res-icon-wrapper" style="--neon-blue: #2ecc71;">
-                <i class="fas fa-bolt" style="color: #2ecc71; font-size: 1.2rem; position: relative; z-index: 2;"></i>
-            </div>
-            <div class="res-text-block">
-                <span>ENERGÍA</span>
-                <div class="res-value energy-status" id="res-energy">20 / 100</div>
-            </div>
-        </div>
-    </header>
-
-    <nav>
-        <div class="nav-link active" onclick="showSection('overview')"><i class="fas fa-city"></i> VISIÓN GENERAL</div>
-        <div class="nav-link" onclick="showSection('resources')"><i class="fas fa-industry"></i> RECURSOS</div>
-        <div class="nav-link" onclick="showSection('research')"><i class="fas fa-flask"></i> INVESTIGACIÓN</div>
-        <div class="nav-link" onclick="showSection('inventory')"><i class="fas fa-boxes"></i> INVENTARIO</div>
-        <div class="nav-link" onclick="showSection('map')"><i class="fas fa-map-marked-alt"></i> MAPA ESTELAR</div>
-        <div class="nav-link" onclick="showSection('market')"><i class="fas fa-shopping-cart"></i> MERCADO</div>
-        <div class="nav-link" onclick="showSection('wiki')"><i class="fas fa-book"></i> GALACTIC WIKI</div>
-        <div class="nav-link" onclick="showSection('missions')"><i class="fas fa-bullseye"></i> MISIONES</div> 
-        <div class="nav-link" onclick="showSection('fleet')"><i class="fas fa-rocket"></i> HANGAR</div>
-    </nav>
-
-    <main>
-        <div id="sec-overview" class="game-section active">
-            <div class="planet-view">
-                <div class="planet-info">
-                    <h2 style="font-family: 'Orbitron'; margin: 0;">PLANETA: KRONOS IV</h2>
-                    <p style="font-size: 0.8rem; color: #aaa; margin: 5px 0;">Coordenadas: [3:442:12] | Temp: 14°C a 45°C</p>
-                    <div style="width: 200px; height: 5px; background: #333; border-radius: 5px; overflow: hidden;">
-                        <div id="planet-fields-bar" style="width: 1%; height: 100%; background: var(--neon-blue);"></div>
-                    </div>
-                    <span style="font-size: 0.7rem;">CAMPOS: <span id="fields-used">1</span> / 163</span>
-                </div>
-            </div>
-
-            <div class="mission-panel" id="tutorial-panel">
-                <h4 style="font-family: 'Orbitron'; margin: 0 0 10px 0; color: var(--neon-purple);">
-                    <i class="fas fa-graduation-cap"></i> PROTOCOLO DE INICIACIÓN
-                </h4>
-                <p id="mission-text">Iniciando sistemas de soporte...</p>
-                <div style="font-size: 0.75rem; color: #bc13fe; margin-top: 5px;" id="mission-reward"></div>
-            </div>
-        </div>
-
-        <div id="sec-resources" class="game-section">
-            <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: var(--neon-blue);">SECTOR INDUSTRIAL</h3>
-            <div class="buildings-grid" id="resources-list"></div>
-        </div>
-
-        <div id="sec-research" class="game-section">
-            <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: var(--neon-purple);">CENTRO TECNOLÓGICO</h3>
-            <div class="buildings-grid" id="research-list"></div>
-        </div>
-
-        <div id="sec-inventory" class="game-section">
-            <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: var(--neon-blue);">ALMACÉN DE CARGA</h3>
-            <div class="inventory-grid" id="inventory-container">
-                </div>
-        </div>
-
-        <div id="sec-map" class="game-section">
-            <div class="map-nav-header">
-                <button class="btn-upgrade" onclick="window.location.href='mapapro.html'" style="margin-top:0; margin-right:10px; width:auto; padding: 5px 15px; border-color: var(--wiki-gold); color: var(--wiki-gold);">
-                    <i class="fas fa-globe-americas"></i> UNIVERSE
+    <div class="main-container">
+        <div class="sidebar">
+            <h2 style="font-family:'Orbitron'; color:var(--neon-blue); margin-bottom:30px; text-align:center;">VOID ECHOS</h2>
+            <button class="nav-btn active" onclick="showSection('resources')"><i class="fas fa-microchip"></i> RECURSOS</button>
+            <button class="nav-btn" onclick="showSection('research')"><i class="fas fa-flask"></i> INVESTIGACIÓN</button>
+            <button class="nav-btn" onclick="showSection('fleet')"><i class="fas fa-rocket"></i> ASTILLERO</button>
+            <div style="margin-top:auto;">
+                <button class="nav-btn" onclick="supabaseClient.auth.signOut().then(() => window.location.href='index.html')" style="border-color: #ff4444; color: #ff4444;">
+                    <i class="fas fa-power-off"></i> DESCONECTAR
                 </button>
-                <select id="galaxy-select" onchange="changeView()"></select>
-                <select id="system-select" onchange="changeView()"></select>
             </div>
-            <div class="map-container" id="star-map">
-                <div class="stellar-grid"></div>
-                <div id="map-objects-layer" class="map-objects-layer"></div>
-                <div class="map-side-panel">
-                    <div class="map-controls">
-                        <div id="selected-object-info" style="font-size: 0.8rem; color: #888; margin-bottom: 15px; min-height: 45px;">Selecciona un destino...</div>
-                        <button class="btn-upgrade" id="btn-deploy-fleet" disabled>DESPLEGAR FLOTA</button>
-                    </div>
-                    <div class="map-planet-list" id="map-planet-list"></div>
+        </div>
+
+        <div class="content-area">
+            <div class="top-bar">
+                <div class="resource-item">
+                    <span class="res-label">FERRUM</span>
+                    <span class="res-value" id="res-metal">0</span>
+                </div>
+                <div class="resource-item">
+                    <span class="res-label">SÍLICE</span>
+                    <span class="res-value" id="res-silice">0</span>
+                </div>
+                <div class="resource-item">
+                    <span class="res-label">ISÓTOPO-H3</span>
+                    <span class="res-value" id="res-deuterio">0</span>
+                </div>
+                <div class="resource-item">
+                    <span class="res-label">ENERGÍA</span>
+                    <span class="res-value" id="res-energia" style="color:#ffea00; text-shadow: 0 0 10px #ffea00;">0</span>
                 </div>
             </div>
-        </div>
 
-        <div id="sec-market" class="game-section">
-            <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: var(--neon-blue);">EXCHANGE GALÁCTICO</h3>
-            <div class="market-search-container">
-                <i class="fas fa-search"></i>
-                <input type="text" id="market-search-input" placeholder="BUSCAR RECURSOS O JUGADORES..." onkeyup="filterMarket()">
+            <div id="sec-resources" class="game-section active">
+                <div class="building-grid" id="resources-list"></div>
             </div>
-            <div class="market-terminal-container">
-                <div class="terminal-window">
-                    <div class="terminal-header"><span>STATION_MERCHANT_V1</span></div>
-                    <div class="terminal-content">
-                        <table class="market-table">
-                            <thead><tr><th>Item</th><th>Stock</th><th>Precio</th><th></th></tr></thead>
-                            <tbody id="npc-market-body">
-                                <tr><td>SÍLICE</td><td>50k</td><td>250 Fe</td><td><button class="btn-market" onclick="buyFromNPC('silice')">BUY</button></td></tr>
-                                <tr><td>ISÓTOPO-H3</td><td>12k</td><td>500 Fe</td><td><button class="btn-market" onclick="buyFromNPC('h3')">BUY</button></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="terminal-window">
-                    <div class="terminal-header"><span>P2P_NETWORK</span></div>
-                    <div class="terminal-content">
-                        <table class="market-table">
-                            <thead><tr><th>Vendedor</th><th>Venta</th><th>Coste</th><th></th></tr></thead>
-                            <tbody id="p2p-market-body">
-                                <tr><td>X_Raven_X</td><td>1k Si</td><td>2.2k Fe</td><td><button class="btn-market">LINK</button></td></tr>
-                                <tr><td>NovaCorp</td><td>500 H3</td><td>3k Si</td><td><button class="btn-market">LINK</button></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+
+            <div id="sec-research" class="game-section">
+                <div class="building-grid" id="research-list"></div>
             </div>
         </div>
-
-        <div id="sec-wiki" class="game-section">
-            <h3 style="font-family: 'Orbitron'; color: var(--wiki-gold);">ARCHIVOS DE INTELIGENCIA</h3>
-            <div class="wiki-container">
-                <div class="wiki-nav">
-                    <div class="wiki-tab active" onclick="showWikiCategory('ships')">NAVES DE COMBATE</div>
-                    <div class="wiki-tab" onclick="alert('Datos encriptados...')">TECNOLOGÍAS</div>
-                    <div class="wiki-tab" onclick="alert('Datos encriptados...')">DEFENSAS</div>
-                </div>
-                <div id="wiki-ships-content" class="ship-wiki-grid animate__animated animate__fadeIn">
-                    </div>
-            </div>
-        </div>
-
-        <div id="sec-missions" class="game-section">
-            <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: #f1c40f;">REGISTRO DE MISIONES</h3>
-            <div id="missions-container"><p>No hay misiones activas.</p></div>
-        </div>
-
-        <div id="sec-fleet" class="game-section">
-            <h3 style="font-family: 'Orbitron'; margin-bottom: 20px; color: #f1c40f;">ASTILLERO ESPACIAL</h3>
-            <div class="news-card"><p>Astillero inactivo.</p></div>
-        </div>
-    </main>
-
-    <aside>
-        <h3 style="font-family: 'Orbitron'; font-size: 0.9rem; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">
-            <i class="fas fa-stream"></i> COLA DE ACTIVIDAD
-        </h3>
-        <div id="active-queue"><p style="color:#444; font-size:0.8rem; text-align:center;">Cola vacía</p></div>
-    </aside>
+    </div>
 
     <script>
+        // --- CONFIGURACIÓN Y DATOS ---
         const game = {
-            resources: { ferrum: 500, silice: 300, h3: 150, energy: 20, maxEnergy: 100 },
-            inventory: [
-                { id: 'mat_01', name: 'Núcleo Uranio', qty: 5, icon: 'fas fa-atom' },
-                { id: 'mat_02', name: 'Chip IA', qty: 12, icon: 'fas fa-microchip' },
-                { id: 'mat_03', name: 'Placa Titanio', qty: 50, icon: 'fas fa-layer-group' }
-            ],
             buildings: [
-                { id: 'minaFe', section: 'resources', name: "Mina de Ferrum", lvl: 1, prod: 30, cost: 60, lore: "Extracción tectónica.", img: "img/minaferrum/lv1/lv1.png" },
-                { id: 'minaSi', section: 'resources', name: "Sintetizador Sílice", lvl: 1, prod: 15, cost: 48, lore: "Refinado de cuarzo.", img: "" },
-                { id: 'minaH3', section: 'resources', name: "Sintetizador H3", lvl: 0, prod: 0, cost: 225, lore: "Recolección de isótopos.", img: "" },
-                { id: 'plantaSolar', section: 'resources', name: "Planta Solar", lvl: 1, prod: 20, cost: 75, lore: "Paneles fotovoltaicos.", img: "" },
-                { id: 'lab', section: 'research', name: "Laboratorio", lvl: 0, prod: 0, cost: 200, lore: "Investigación avanzada.", img: "" },
-                { id: 'astillero', section: 'research', name: "Astillero", lvl: 0, prod: 0, cost: 400, lore: "Construcción de naves.", img: "" }
-            ],
-            wikiShips: [
-                { id: "S-01", role: "ROL I: PANTALLA", name: "Interceptor 'Arpía'", desc: "Unidad mínima de enjambre. Alta maniobrabilidad.", hp: 20, atk: 15, def: 85, img: "img/ships/interceptorarpía/interceptorarpía.png" },
-                { id: "S-02", role: "ROL I: PANTALLA", name: "Escolta 'Baluarte'", desc: "Protege a las naves grandes. Fuego rápido.", hp: 45, atk: 35, def: 50, img: "" },
-                { id: "S-03", role: "ROL II: ATAQUE CAPITAL", name: "Crucero 'Titán'", desc: "Cañón masivo. Daño crítico contra naves pesadas.", hp: 70, atk: 95, def: 20, img: "" },
-                { id: "S-04", role: "ROL II: ATAQUE CAPITAL", name: "Corbeta 'Quimera'", desc: "Especialista en torpedos de largo alcance.", hp: 55, atk: 80, def: 40, img: "" },
-                { id: "S-05", role: "ROL III: E-WAR", name: "Fragata 'Nebulosa'", desc: "Pulsos EMP. Anula escudos enemigos temporalmente.", hp: 50, atk: 10, def: 60, img: "" },
-                { id: "S-06", role: "ROL III: SOPORTE", name: "Fragata 'Lázaro'", desc: "Recupera naves dañadas tras el combate.", hp: 45, atk: 5, def: 50, img: "" },
-                { id: "S-07", role: "ROL IV: ASALTO", name: "Bombardero 'Ícaro'", desc: "Ataca almacenes planetarios directamente.", hp: 60, atk: 70, def: 75, img: "" },
-                { id: "S-08", role: "ROL IV: ASALTO", name: "Cañonera 'Vándalo'", desc: "Absorbe el fuego de torretas defensivas.", hp: 95, atk: 20, def: 80, img: "" },
-                { id: "S-09", role: "ROL V: COMANDO", name: "Portanaves 'Colmena'", desc: "Base móvil para el transporte de interceptores.", hp: 80, atk: 40, def: 60, img: "" },
-                { id: "S-10", role: "ROL V: COMANDO", name: "Acorazado 'Dominus'", desc: "Nave insignia. Aumenta la precisión de la flota.", hp: 100, atk: 100, def: 90, img: "" }
-            ],
-            
-            map: { currentGalaxy: 1, currentSystem: 1, selectedPlanet: null }
+                { id: 'minaFe', section: 'resources', name: 'Mina de Ferrum', lvl: 1, lore: 'Extractor de mineral ferroso mediante pulsos magnéticos.', img: 'img/minaferrum/lv1/lv1.png' },
+                { id: 'minaSi', section: 'resources', name: 'Sintetizador de Sílice', lvl: 1, lore: 'Procesa arena estelar para extraer cristales de alta pureza.', img: 'img/minasilice/lv1/lv1.png' },
+                { id: 'minaH3', section: 'resources', name: 'Colector de Isótopo-H3', lvl: 1, lore: 'Extrae Deuterio de las capas atmosféricas gaseosas.', img: 'img/minadeuterio/lv1/lv1.png' },
+                { id: 'plantaSolar', section: 'resources', name: 'Matriz Solar', lvl: 1, lore: 'Paneles de grafeno que absorben radiación de la enana blanca.', img: 'img/plantasolar/lv1/lv1.png' },
+                { id: 'lab', section: 'research', name: 'Laboratorio Tech', lvl: 1, lore: 'Centro de desarrollo para nuevas tecnologías espaciales.', img: 'img/laboratorio/lv1/lv1.png' }
+            ]
         };
 
-        function showWikiCategory(cat) {
-            const container = document.getElementById('wiki-ships-content');
-            container.innerHTML = '';
-            game.wikiShips.forEach(ship => {
-                container.innerHTML += `
-                    <div class="ship-card-wiki">
-                        <div style="font-size:0.6rem; color:var(--wiki-gold); font-family:'Share Tech Mono'; margin-bottom:5px;">${ship.role}</div>
-                        <div class="ship-img-frame" data-id="${ship.id}">
-                            ${ship.img ? `<img src="${ship.img}" alt="${ship.name}">` : ''}
-                        </div>
-                        <div style="font-family:'Orbitron'; font-size:1rem; margin-bottom:8px;">${ship.name}</div>
-                        <div style="font-size:0.75rem; color:#aaa; line-height:1.2; height:45px; overflow:hidden;">${ship.desc}</div>
-                        <div class="ship-stats-wiki">
-                            <div class="stat-row"><span class="stat-label">STR</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${ship.hp}%"></div></div></div>
-                            <div class="stat-row"><span class="stat-label">ATK</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${ship.atk}%"></div></div></div>
-                            <div class="stat-row"><span class="stat-label">AGI</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${ship.def}%"></div></div></div>
-                        </div>
-                    </div>`;
-            });
-        }
+        let userResources = { metal: 0, silicio: 0, deuterio: 0, energia: 0 };
+        let dbBuildingsCache = [];
 
-        function filterMarket() {
-            const val = document.getElementById('market-search-input').value.toUpperCase();
-            const rows = document.querySelectorAll('.market-table tbody tr');
-            rows.forEach(r => {
-                r.style.display = r.innerText.toUpperCase().includes(val) ? "" : "none";
-            });
-        }
-
-        function buyFromNPC(resource) {
-            const prices = { silice: 250, h3: 500 };
-            const cost = prices[resource];
-            if(game.resources.ferrum >= cost) {
-                game.resources.ferrum -= cost;
-                game.resources[resource] += 100;
-                alert(`ADQUISICIÓN COMPLETADA: 100 unidades de ${resource.toUpperCase()}`);
-            } else { alert("ERROR: CRÉDITOS DE FERRUM INSUFICIENTES"); }
-        }
-
-        function initSelectors() {
-            const galSelect = document.getElementById('galaxy-select');
-            const sysSelect = document.getElementById('system-select');
-            for(let i=1; i<=9; i++) galSelect.innerHTML += `<option value="${i}">GALAXIA ${i}</option>`;
-            for(let i=1; i<=499; i++) sysSelect.innerHTML += `<option value="${i}">SISTEMA ${i}</option>`;
-        }
-
-        function generateSystemPlanets(galaxy, system) {
-            let seed = (galaxy * 1000) + system;
-            function random() { let x = Math.sin(seed++) * 10000; return x - Math.floor(x); }
-            const numPlanets = Math.floor(random() * 15) + 1;
-            const planets = [];
-            const names = ["ARES", "ZEUS", "KRONOS", "VULCAN", "XENON", "NYX", "TITAN"];
-            const colors = ["#00f2ff", "#e74c3c", "#bc13fe", "#f1c40f", "#2ecc71"];
-            for(let i=1; i<=numPlanets; i++) {
-                planets.push({
-                    id: i, name: `${names[Math.floor(random()*names.length)]} ${i}-${system}`,
-                    coords: `[${galaxy}:${system}:${i}]`, x: 50 + (random() * 650), y: 50 + (random() * 450),
-                    color: colors[Math.floor(random()*colors.length)], 
-                    owner: random() > 0.6 ? "OPERADOR_" + i : null
-                });
-            }
-            return planets;
-        }
-
-        function changeView() {
-            game.map.currentGalaxy = parseInt(document.getElementById('galaxy-select').value);
-            game.map.currentSystem = parseInt(document.getElementById('system-select').value);
-            initMap();
-        }
-
-        function toggleFloatingChat() {
-            const chat = document.getElementById('holo-floating-chat');
-            chat.style.display = (chat.style.display === 'flex') ? 'none' : 'flex';
-        }
-
-        function renderInventory() {
-            const container = document.getElementById('inventory-container');
-            container.innerHTML = '';
-            game.inventory.forEach(item => {
-                container.innerHTML += `
-                    <div class="inventory-item animate__animated animate__flipInX" onclick="alert('Item: ${item.name}')">
-                        <i class="${item.icon}"></i>
-                        <div class="item-name-tag">${item.name}</div>
-                        <div class="item-qty">x${item.qty}</div>
-                    </div>`;
-            });
-        }
-
+        // --- LÓGICA DE INTERFAZ ---
         function showSection(sectionId) {
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelectorAll('.game-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('sec-' + sectionId).classList.add('active');
-            
-            // Lógica de activación de navegación
-            const links = document.querySelectorAll('.nav-link');
-            links.forEach(l => {
-                if(l.innerText.includes(sectionId.toUpperCase()) || 
-                   (sectionId === 'overview' && l.innerText.includes('VISIÓN'))) {
-                    l.classList.add('active');
-                }
-            });
-
-            if(sectionId === 'resources' || sectionId === 'research') renderList(sectionId);
-            
-            // MODIFICADO: Lógica mejorada para entrar al mapa enfocado en el planeta base [3:442:12]
-            if(sectionId === 'map') {
-                // Seteamos los valores del selector a las coordenadas de Kronos IV
-                document.getElementById('galaxy-select').value = 3;
-                document.getElementById('system-select').value = 442;
-                game.map.currentGalaxy = 3;
-                game.map.currentSystem = 442;
-                
-                initMap();
-                focusMyPlanet("[3:442:12]");
-            }
-            
-            if(sectionId === 'wiki') showWikiCategory('ships');
-            if(sectionId === 'inventory') renderInventory();
+            event.currentTarget.classList.add('active');
+            renderList(sectionId);
         }
 
-        // NUEVA FUNCIÓN: Enfoca y selecciona visualmente el planeta en el mapa
-        function focusMyPlanet(targetCoords) {
-            const layer = document.getElementById('map-objects-layer');
-            const planets = layer.querySelectorAll('.stellar-object');
-            
-            planets.forEach(p => {
-                const body = p.querySelector('.planet-body');
-                // Simulamos el click para que se active la info lateral
-                // Extraemos las coordenadas del atributo onclick que pusiste en initMap
-                if (body.getAttribute('onclick').includes(targetCoords)) {
-                    body.click(); 
-                    body.classList.add('active');
-                } else {
-                    body.classList.remove('active');
-                }
-            });
+        function mapBuildingId(gameId) {
+            const mapping = {
+                'minaFe': 'mina_metal',
+                'minaSi': 'mina_silicio',
+                'minaH3': 'mina_deuterio',
+                'plantaSolar': 'planta_solar',
+                'lab': 'laboratorio'
+            };
+            return mapping[gameId] || gameId;
         }
 
-        function initMap() {
-            const layer = document.getElementById('map-objects-layer');
-            const listContainer = document.getElementById('map-planet-list');
-            layer.innerHTML = ''; listContainer.innerHTML = '';
-            const planets = generateSystemPlanets(game.map.currentGalaxy, game.map.currentSystem);
-            planets.forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'stellar-object'; div.style.left = p.x + 'px'; div.style.top = p.y + 'px';
-                div.innerHTML = `<div class="planet-body" style="background: radial-gradient(circle at 30% 30%, ${p.color}, #000);" onclick="selectPlanet('${p.coords}', '${p.name}', '${p.color}', '${p.owner}')"></div><span>${p.name}</span>`;
-                layer.appendChild(div);
-                const listItem = document.createElement('div');
-                listItem.className = 'list-planet-item';
-                listItem.innerHTML = `<div><div class="list-planet-name">${p.name}</div><div class="list-planet-coords">${p.coords}</div></div>`;
-                listContainer.appendChild(listItem);
-            });
-        }
+        const getUpgradeCost = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
+        const getUpgradeTime = (level) => level === 1 ? 30000 : (level * 60000);
 
-        function selectPlanet(coords, name, color, owner) {
-            // Limpiamos clases activas de otros planetas visualmente
-            document.querySelectorAll('.planet-body').forEach(b => b.classList.remove('active'));
-            // Buscamos el elemento que disparó el evento para darle el borde neon
-            event.target.classList.add('active');
+        // --- RENDERIZADO (CORREGIDO) ---
+        function renderList(section) {
+            const container = document.getElementById(section + '-list');
+            if (!container) return;
+            container.innerHTML = '';
 
-            document.getElementById('selected-object-info').innerHTML = `<span style="color:${color}; font-weight:bold;">${name}</span><br>Coord: ${coords}<br>${owner !== 'null' ? 'Habitado por: ' + owner : 'Deshabitado'}`;
-            document.getElementById('btn-deploy-fleet').disabled = false;
-        }
+            const filtered = game.buildings.filter(b => b.section === section);
 
-    
+            filtered.forEach(b => {
+                const dbType = mapBuildingId(b.id);
+                const dbB = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 1, is_upgrading: false };
+                const cost = getUpgradeCost(dbB.level);
 
-        initSelectors();
-        showSection('overview');
-    </script>
-<script>
-// --- CONFIGURACIÓN ---
-const mapBuildingIdInv = {
-    minaFe: 'mina_metal',
-    minaSi: 'mina_silicio',
-    minaH3: 'mina_deuterio',
-    plantaSolar: 'planta_solar',
-    lab: 'laboratorio',
-    astillero: 'astillero'
-};
-
-function mapBuildingId(gameId) { return mapBuildingIdInv[gameId] || gameId; }
-const getUpgradeCost = (level) => Math.floor(500 * Math.pow(1.6, level - 1));
-const getUpgradeTime = (level) => (5 * Math.pow(2, level - 1)) * 60 * 1000; 
-
-let dbBuildingsCache = []; 
-let userResources = { metal: 0, silicio: 0, deuterio: 0 };
-
-// --- FUNCIÓN DE RECURSOS (CORREGIDA) ---
-async function actualizarRecursosDesdeBD() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
-
-    const { data: player } = await supabaseClient
-        .from('players') // <--- Tabla correcta
-        .select('metal, silicio, deuterio, nivel, xp')
-        .eq('id', user.id)
-        .single();
-
-    if (player) {
-        userResources.metal = player.metal;
-        userResources.silicio = player.silicio;
-        userResources.deuterio = player.deuterio;
-
-        // Pintar en el HTML
-        document.getElementById('res-ferrum').innerText = Math.floor(player.metal).toLocaleString();
-        document.getElementById('res-silice').innerText = Math.floor(player.silicio).toLocaleString();
-        document.getElementById('res-h3').innerText = Math.floor(player.deuterio).toLocaleString();
-    }
-}
-
-// --- GESTIÓN DE EDIFICIOS ---
-async function syncBuildingsFromSupabase() {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) return;
-
-        const { data, error } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
-        if (error) throw error;
-
-        if (data) {
-            dbBuildingsCache = data;
-            data.forEach(row => {
-                const bId = Object.keys(mapBuildingIdInv).find(key => mapBuildingIdInv[key] === row.building_type);
-                const building = game.buildings.find(b => b.id === bId);
-                if (building) building.lvl = row.level;
-            });
-            renderList('resources');
-            renderList('research');
-        }
-    } catch (e) {
-        console.error("Error en edificios:", e.message);
-        // Si falla, al menos pintamos la lista básica para que no se quede en "Cargando"
-        renderList('resources'); 
-    }
-}
-async function mejorarEdificio(buildingId) {
-    console.log("Intentando mejorar edificio:", buildingId);
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    // Buscamos los datos actuales del edificio en nuestra caché
-    const building = dbBuildingsCache.find(b => b.building_type === buildingId);
-    
-    if (!user || !building) {
-        console.error("Usuario o edificio no encontrado");
-        return;
-    }
-
-    // Calculamos el coste según el nivel actual
-    const coste = getUpgradeCost(building.level);
-
-    // 1. Verificación de recursos
-    if (userResources.metal < coste) {
-        alert(`No tienes suficiente Ferrum. Necesitas ${coste} y tienes ${Math.floor(userResources.metal)}`);
-        return;
-    }
-
-    // 2. Cobro en la tabla 'players'
-    const { error: errorPago } = await supabaseClient
-        .from('players')
-        .update({ metal: userResources.metal - coste })
-        .eq('id', user.id);
-
-    if (errorPago) {
-        console.error("Error al procesar el pago:", errorPago.message);
-        return;
-    }
-
-    // 3. Iniciar la construcción en la tabla 'buildings'
-    // Calculamos cuánto tardará
-    const upgradeDuration = getUpgradeTime(building.level);
-    const upgradeEnd = new Date(Date.now() + upgradeDuration);
-
-    const { error: upgradeError } = await supabaseClient
-        .from('buildings')
-        .update({
-            is_upgrading: true,
-            upgrade_end: upgradeEnd.toISOString()
-        })
-        .eq('id', building.id);
-
-    if (!upgradeError) {
-        console.log("Pago realizado y mejora iniciada");
-        // Actualizamos la interfaz inmediatamente
-        await actualizarRecursosDesdeBD();
-        await syncBuildingsFromSupabase();
-    } else {
-        console.error("Error al iniciar mejora:", upgradeError.message);
-    }
-}    
-
-function renderList(section) {
-    const container = document.getElementById(section + '-list');
-    if (!container) return;
-    container.innerHTML = '';
-
-    // 1. Filtramos los edificios base de la constante 'game'
-    const baseBuildings = game.buildings.filter(b => b.section === section);
-
-    baseBuildings.forEach(b => {
-        // 2. Buscamos si este edificio existe en la caché de la base de datos
-        const dbType = mapBuildingId(b.id);
-        const dbData = dbBuildingsCache.find(db => db.building_type === dbType);
-        
-        // 3. Si no hay datos en la DB aún, usamos nivel 1 por defecto
-        const currentLevel = dbData ? dbData.level : (b.lvl || 0);
-        const isUpgrading = dbData ? dbData.is_upgrading : false;
-        const cost = getUpgradeCost(currentLevel);
-
-        // 4. Construimos la tarjeta con tus estilos originales
-        container.innerHTML += `
-            <div class="building-card animate__animated animate__fadeIn">
-                <img src="${b.img || 'img/placeholder.png'}" class="building-img" 
-                     onerror="this.src='https://via.placeholder.com/150/000000/00f2ff?text=CONSTRUCCION'">
-                <div class="building-info">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span class="building-name" style="color:var(--neon-blue); font-weight:bold;">${b.name}</span>
-                        <span class="building-lvl" style="background:var(--neon-blue); color:black; padding:2px 6px; border-radius:3px; font-size:0.7rem;">
-                            LVL ${currentLevel}
-                        </span>
-                    </div>
-                    <p style="font-size:0.75rem; color:#888; margin:8px 0; line-height:1.2;">${b.lore}</p>
-                    
-                    <div style="border-left: 2px solid var(--neon-blue); padding-left:10px; margin-bottom:12px;">
-                        <div style="font-size:0.6rem; color:#666;">COSTE SIGUIENTE NIVEL</div>
-                        <div style="font-size:0.9rem; color:#eee; font-family:'Share Tech Mono';">
-                             <i class="fas fa-cube" style="color:var(--neon-blue);"></i> ${cost.toLocaleString()} <span style="font-size:0.7rem;">FERRUM</span>
+                container.innerHTML += `
+                    <div class="building-card animate__animated animate__fadeIn">
+                        <img src="${b.img}" class="building-img" onerror="this.src='https://via.placeholder.com/300x160/0a0b10/00f2ff?text=${b.name}'">
+                        <div class="building-info">
+                            <span class="building-lvl">NIVEL ${dbB.level}</span>
+                            <h3 class="building-name">${b.name}</h3>
+                            <p class="building-lore">${b.lore}</p>
+                            <div style="margin-bottom:15px; font-size:0.9rem; color:var(--wiki-gold);">
+                                <i class="fas fa-cube"></i> Coste: ${cost.toLocaleString()} Ferrum
+                            </div>
+                            <button class="btn-upgrade" 
+                                    id="btn-upgrade-${dbType}" 
+                                    onclick="mejorarEdificio('${b.id}')"
+                                    ${dbB.is_upgrading ? 'disabled' : ''}>
+                                ${dbB.is_upgrading ? '<i class="fas fa-spinner fa-spin"></i> CONSTRUYENDO...' : 'MEJORAR ESTRUCTURA'}
+                            </button>
                         </div>
-                    </div>
+                    </div>`;
+            });
+        }
 
-                    <button class="btn-upgrade" 
-                            id="btn-upgrade-${dbType}" 
-                            onclick="mejorarEdificio('${b.id}')"
-                            ${isUpgrading ? 'disabled' : ''}
-                            style="width:100%; position:relative; overflow:hidden;">
-                        ${isUpgrading ? 
-                            '<i class="fas fa-sync fa-spin"></i> CALCULANDO...' : 
-                            '<i class="fas fa-arrow-up"></i> MEJORAR ESTRUCTURA'}
-                    </button>
-                </div>
-            </div>`;
-    });
-}
-// --- INICIALIZACIÓN CRÍTICA ---
-(async () => {
-    console.log("Sistema iniciando...");
-    initSelectors();
-    showSection('overview');
-
-    // 1. Verificar sesión
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-        alert("Sesión no detectada. Por favor, entra de nuevo.");
-        window.location.href = 'index.html';
-        return;
-    }
-
-    // 2. Cargar datos
-    await syncBuildingsFromSupabase();
-    await actualizarRecursosDesdeBD();
-
-    // 3. Arrancar bucles
-    setInterval(actualizarRecursosDesdeBD, 5000);
-    setInterval(finalizarMejoras, 5000);
-    console.log("Sistemas operativos para:", user.email);
-})();
-    function actualizarContadoresMejora() {
-    const ahora = new Date();
-
-    dbBuildingsCache.forEach(b => {
-        if (b.is_upgrading && b.upgrade_end) {
-            const tiempoFinal = new Date(b.upgrade_end);
-            const restante = tiempoFinal - ahora;
-
-            // Buscamos el botón de este edificio en el HTML
-            // Nota: El ID del botón debe ser único, por ejemplo: btn-upgrade-mina_metal
-            const btn = document.getElementById(`btn-upgrade-${b.building_type}`);
-            
-            if (btn) {
-                if (restante > 0) {
-                    const minutos = Math.floor((restante / 1000 / 60) % 60);
-                    const segundos = Math.floor((restante / 1000) % 60);
-                    btn.innerText = `CONSTRUYENDO... ${minutos}m ${segundos}s`;
-                    btn.disabled = true;
-                    btn.style.opacity = "0.7";
-                    btn.style.cursor = "not-allowed";
-                } else {
-                    // La mejora ha terminado
-                    btn.innerText = "¡COMPLETAR!";
-                    btn.disabled = false;
-                    btn.style.borderColor = "var(--neon-green)";
-                    btn.onclick = () => finalizarMejora(b.building_type);
-                }
+        // --- FUNCIONES DE BASE DE DATOS ---
+        async function actualizarRecursosDesdeBD() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return;
+            const { data } = await supabaseClient.from('players').select('*').eq('id', user.id).single();
+            if (data) {
+                userResources = data;
+                document.getElementById('res-metal').innerText = Math.floor(data.metal);
+                document.getElementById('res-silice').innerText = Math.floor(data.silicio);
+                document.getElementById('res-deuterio').innerText = Math.floor(data.deuterio);
+                document.getElementById('res-energia').innerText = data.energia || 0;
             }
         }
-    });
-}
-    function mapBuildingId(gameId) {
-    const mapping = {
-        'minaFe': 'mina_metal',
-        'minaSi': 'mina_silicio',
-        'minaH3': 'mina_deuterio',
-        'plantaSolar': 'planta_solar',
-        'lab': 'laboratorio',
-        'astillero': 'astillero'
-    };
-    return mapping[gameId] || gameId;
-}
-// Asegúrate de que esto esté al final de tu <script>
-setInterval(() => {
-    actualizarContadoresMejora();
-}, 1000);
-</script>
+
+        async function syncBuildingsFromSupabase() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            const { data } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
+            if (data) {
+                dbBuildingsCache = data;
+                renderList(document.querySelector('.nav-btn.active').innerText.toLowerCase().includes('recursos') ? 'resources' : 'research');
+            }
+        }
+
+        async function mejorarEdificio(gameId) {
+            const dbType = mapBuildingId(gameId);
+            const bData = dbBuildingsCache.find(db => db.building_type === dbType);
+            const coste = getUpgradeCost(bData ? bData.level : 1);
+
+            if (userResources.metal < coste) {
+                alert("Recursos insuficientes");
+                return;
+            }
+
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            const upgradeEnd = new Date(Date.now() + getUpgradeTime(bData ? bData.level : 1)).toISOString();
+
+            // Descontar metal y activar mejora
+            await supabaseClient.from('players').update({ metal: userResources.metal - coste }).eq('id', user.id);
+            await supabaseClient.from('buildings').update({ is_upgrading: true, upgrade_end: upgradeEnd }).eq('id', bData.id);
+            
+            await syncBuildingsFromSupabase();
+        }
+
+        async function finalizarMejora(dbType) {
+            const bData = dbBuildingsCache.find(db => db.building_type === dbType);
+            await supabaseClient.from('buildings').update({ 
+                level: bData.level + 1, 
+                is_upgrading: false, 
+                upgrade_end: null 
+            }).eq('id', bData.id);
+            
+            await syncBuildingsFromSupabase();
+        }
+
+        function actualizarContadoresMejora() {
+            const ahora = new Date();
+            dbBuildingsCache.forEach(b => {
+                if (b.is_upgrading && b.upgrade_end) {
+                    const restante = new Date(b.upgrade_end) - ahora;
+                    const btn = document.getElementById(`btn-upgrade-${b.building_type}`);
+                    if (btn) {
+                        if (restante > 0) {
+                            const seg = Math.ceil(restante / 1000);
+                            btn.innerText = `TERMINA EN ${seg}s`;
+                            btn.disabled = true;
+                        } else {
+                            btn.innerText = "FINALIZAR OBRA";
+                            btn.disabled = false;
+                            btn.classList.add('btn-completar');
+                            btn.onclick = () => finalizarMejora(b.building_type);
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- INICIALIZACIÓN ---
+        (async () => {
+            await actualizarRecursosDesdeBD();
+            await syncBuildingsFromSupabase();
+            setInterval(actualizarRecursosDesdeBD, 5000);
+            setInterval(actualizarContadoresMejora, 1000);
+        })();
+    </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
