@@ -282,71 +282,122 @@
         }
 
         // --- ACTUALIZADA: ORDENAR NAVE (Resta materiales de la BD) ---
-        async function ordenarNave(id) {
-            const ship = NAVES_DISPONIBLES.find(s => s.id === id);
-            const qty = parseInt(document.getElementById(`qty-${id}`).value);
-            const { data: { user } } = await supabaseClient.auth.getUser();
+       async function ordenarNave(id) {
+    const ship = NAVES_DISPONIBLES.find(s => s.id === id);
+    const qty = parseInt(document.getElementById(`qty-${id}`).value);
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
-            // 1. Obtener recursos actuales del usuario desde la BD
-            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
-            
-            const costM = ship.metal * qty;
-            const costS = ship.silicio * qty;
+    // 1. Apuntamos a la tabla 'players' y pedimos metal y silicio
+    const { data: player, error } = await supabaseClient
+        .from('players')
+        .select('metal, silicio') // 'silicio' con O según tu captura
+        .eq('id', user.id)
+        .single();
+    
+    if (error || !player) {
+        console.error("Error al obtener datos de players:", error);
+        return;
+    }
 
-            if (profile.metal >= costM && profile.silice >= costS) {
-                // 2. Restar recursos en la base de datos
-                await supabaseClient.from('profiles').update({
-                    metal: profile.metal - costM,
-                    silice: profile.silice - costS
-                }).eq('id', user.id);
+    const costM = ship.metal * qty;
+    const costS = ship.silicio * qty;
 
-                // 3. Añadir a la cola local
-                const newOrder = {
-                    uid: Date.now(),
-                    ...ship,
-                    qty: qty,
-                    originalQty: qty,
-                    timeLeft: ship.time,
-                    costMetal: costM,
-                    costSilicio: costS
-                };
+    // 2. Comprobamos si el jugador tiene suficiente en la tabla players
+    if (player.metal >= costM && player.silicio >= costS) {
+        
+        // 3. Restamos los materiales directamente en 'players'
+        await supabaseClient.from('players').update({
+            metal: player.metal - costM,
+            silicio: player.silicio - costS
+        }).eq('id', user.id);
 
-                shipQueue.push(newOrder);
-                actualizarRecursosDesdeBD(); // Actualizar UI superior
-                updateShipQueueUI();
-                if(shipQueue.length === 1) processShipQueue();
-            } else {
-                alert("RECURSOS INSUFICIENTES: Necesitas " + costM + " Metal y " + costS + " Sílice.");
-            }
+        // 4. Lógica de la cola de construcción (se mantiene igual)
+        const newOrder = {
+            uid: Date.now(),
+            ...ship,
+            qty: qty,
+            originalQty: qty,
+            timeLeft: ship.time,
+            costMetal: costM,
+            costSilicio: costS
+        };
+
+        shipQueue.push(newOrder);
+        
+        // Actualizamos la barra superior de recursos
+        if (typeof actualizarRecursosDesdeBD === "function") {
+            actualizarRecursosDesdeBD(); 
         }
+        
+        updateShipQueueUI();
+        if(shipQueue.length === 1) processShipQueue();
+    } else {
+        alert("Recursos insuficientes en la terminal.");
+    }
+}
 
-        function cancelarNave(uid) {
-            const index = shipQueue.findIndex(o => o.uid === uid);
-            if(index === -1) return;
+      async function cancelarConstruccion(uid) {
+    // 1. Buscamos el pedido en la cola por su ID único
+    const index = shipQueue.findIndex(item => item.uid === uid);
+    if (index === -1) return;
 
-            const order = shipQueue[index];
-            const refundM = Math.floor(order.costMetal * 0.9);
-            const refundS = Math.floor(order.costSilicio * 0.9);
+    const order = shipQueue[index];
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
-            // Reembolso en BD (opcional, pero justo)
-            // Aquí podrías añadir una llamada a Supabase para devolver los recursos.
+    // 2. Calculamos el 90% del reembolso
+    const refundM = Math.floor(order.costMetal * 0.9);
+    const refundS = Math.floor(order.costSilicio * 0.9);
 
-            alert(`Orden cancelada. Reembolso del 90% procesado:\n+${refundM} Ferrum\n+${refundS} Sílice`);
+    // 3. Devolvemos los recursos a la tabla 'players'
+    const { data: player } = await supabaseClient
+        .from('players')
+        .select('metal, silicio')
+        .eq('id', user.id)
+        .single();
 
-            shipQueue.splice(index, 1);
-            if(index === 0) {
-                clearInterval(shipTimerInterval);
-                processShipQueue();
-            }
-            updateShipQueueUI();
-        }
+    if (player) {
+        await supabaseClient.from('players').update({
+            metal: player.metal + refundM,
+            silicio: player.silicio + refundS
+        }).eq('id', user.id);
+    }
 
+    // 4. Si es el que se está construyendo ahora, paramos el reloj
+    if (index === 0) {
+        clearInterval(shipTimerInterval);
+    }
+
+    // 5. Quitamos de la cola y refrescamos
+    shipQueue.splice(index, 1);
+    
+    if (index === 0 && shipQueue.length > 0) {
+        processShipQueue(); // Empezamos el siguiente si borramos el primero
+    }
+
+    actualizarRecursosDesdeBD(); // Refrescar barrita superior
+    updateShipQueueUI();
+    alert(`Construcción cancelada. Se ha reembolsado el 90% (${refundM} Metal, ${refundS} Silicio).`);
+}
         function updateShipQueueUI() {
-            const container = document.getElementById('ship-queue-list');
-            if(shipQueue.length === 0) {
-                container.innerHTML = `<p style="text-align:center; opacity:0.4; font-size:0.8rem; padding:20px;">ASTILLERO INACTIVO</p>`;
-                return;
-            }
+    const container = document.getElementById('ship-queue-list');
+    if(shipQueue.length === 0) { 
+        container.innerHTML = "<p style='opacity:0.4'>Sin actividad en hangares...</p>"; 
+        return; 
+    }
+
+    container.innerHTML = shipQueue.map((order, idx) => `
+        <div class="queue-item">
+            <span class="cancel-x" onclick="cancelarConstruccion(${order.uid})">CANCELAR (90%)</span>
+            <div style="font-size:0.8rem; color:var(--neon-blue);">${order.qty}x ${order.name}</div>
+            ${idx === 0 ? `
+                <div style="font-size:0.7rem; color:#888;">Construyendo... ${order.timeLeft}s</div>
+                <div class="ship-progress-bg">
+                    <div class="ship-progress-fill" style="width:${((order.time - order.timeLeft) / order.time * 100)}%"></div>
+                </div>
+            ` : '<div style="font-size:0.7rem; color:#555;">En espera...</div>'}
+        </div>
+    `).join('');
+}
 
             container.innerHTML = shipQueue.map((order, idx) => `
                 <div class="queue-item animate__animated animate__slideInRight">
@@ -482,3 +533,4 @@
     </script>
 </body>
 </html>
+
