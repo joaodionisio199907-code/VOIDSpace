@@ -30,6 +30,26 @@
             --wiki-gold: #ffd700;
             --neon-green: #00ff88;
         }
+      
+        
+        .recurso-flotante {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #00f2ff;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    pointer-events: none;
+    animation: flotarArriba 2s ease-out forwards;
+    z-index: 100;
+    text-shadow: 0 0 10px rgba(0, 242, 255, 0.8);
+}
+
+@keyframes flotarArriba {
+    0% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -40px); }
+}
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -563,6 +583,7 @@ function renderList(section) {
     </script>
 </body>
 </html>
+
 
 
 
