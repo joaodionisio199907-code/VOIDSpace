@@ -198,343 +198,163 @@
 
     <script>
         // --- DATOS DE NAVES ---
-        const NAVES_DISPONIBLES = [
-            { id: 'cazador_l', name: 'CAZADOR LIGERO', metal: 3000, silicio: 1000, time: 15, img: 'https://images.unsplash.com/photo-1614728263952-84ea256f9679?w=400', attack: 50, shield: 10 },
-            { id: 'carguero_p', name: 'CARGUERO PEQUEÑO', metal: 2000, silicio: 2000, time: 25, img: 'https://images.unsplash.com/photo-1581822261290-991b38693d1b?w=400', attack: 5, shield: 20 }
-        ];
+     
+const NAVES_DISPONIBLES = [
+    { id: 'cazador_l', name: 'CAZADOR LIGERO', metal: 3000, silicio: 1000, time: 15, img: 'https://images.unsplash.com/photo-1614728263952-84ea256f9679?w=400', attack: 50, shield: 10 },
+    { id: 'carguero_p', name: 'CARGUERO PEQUEÑO', metal: 2000, silicio: 2000, time: 25, img: 'https://images.unsplash.com/photo-1581822261290-991b38693d1b?w=400', attack: 5, shield: 20 }
+];
 
-        let shipQueue = [];
-        let shipTimerInterval = null;
+let shipQueue = [];
+let shipTimerInterval = null;
 
-        // --- LÓGICA DE NAVEGACIÓN ---
-        function showSection(id) {
-            document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('sec-'+id).classList.add('active');
-            
-            if(id === 'forum') loadForumTopics();
-            if(id === 'resources' || id === 'research') renderList(id);
-            if(id === 'fleet') { renderAstillero(); loadHangar(); }
-        }
+// --- LÓGICA DE NAVEGACIÓN ---
+function showSection(id) {
+    document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    const section = document.getElementById('sec-' + id);
+    if(section) section.classList.add('active');
+    
+    // Disparar carga de datos según sección
+    if(id === 'forum') loadForumTopics();
+    if(id === 'resources' || id === 'research') { if(typeof renderList === 'function') renderList(id); }
+    if(id === 'fleet') { renderAstillero(); loadHangar(); }
+}
 
-        // --- RENDERIZADO DEL ASTILLERO ---
-        function renderAstillero() {
-            const container = document.getElementById('fleet-list-container');
-            let html = '';
+// --- RENDERIZADO DEL ASTILLERO ---
+function renderAstillero() {
+    const container = document.getElementById('fleet-list-container');
+    container.innerHTML = NAVES_DISPONIBLES.map(ship => `
+        <div class="ship-card active animate__animated animate__fadeIn">
+            <div class="ship-img-container">
+                <div class="scan-effect"></div>
+                <img src="${ship.img}" class="ship-img">
+            </div>
+            <div class="ship-info">
+                <h3 style="font-family:Orbitron; font-size:0.9rem; color:var(--neon-blue);">${ship.name}</h3>
+                <div style="font-size:0.7rem; margin:10px 0; color:#aaa;">ATK: ${ship.attack} | ESC: ${ship.shield} | ${ship.time}s</div>
+                <div style="font-size:0.7rem; color:var(--neon-blue); margin-bottom:10px;">M: ${ship.metal} | S: ${ship.silicio}</div>
+                <div style="display:flex; gap:5px;">
+                    <input type="number" id="qty-${ship.id}" class="forum-input" value="1" min="1" style="width:60px; margin:0; padding:5px;">
+                    <button class="nav-btn" onclick="ordenarNave('${ship.id}')" style="margin:0; padding:5px; font-size:0.7rem;">CONSTRUIR</button>
+                </div>
+            </div>
+        </div>`).join('');
+}
 
-            NAVES_DISPONIBLES.forEach(ship => {
-                html += `
-                    <div class="ship-card active animate__animated animate__fadeIn">
-                        <div class="ship-img-container">
-                            <div class="scan-effect"></div>
-                            <img src="${ship.img}" class="ship-img">
-                        </div>
-                        <div class="ship-info">
-                            <h3 style="font-family:Orbitron; font-size:0.9rem; color:var(--neon-blue);">${ship.name}</h3>
-                            <div style="font-size:0.7rem; margin:10px 0; color:#aaa;">
-                                ATK: ${ship.attack} | ESC: ${ship.shield} | ${ship.time}s
-                            </div>
-                            <div style="font-size:0.7rem; color:var(--neon-blue); margin-bottom:10px;">
-                                M: ${ship.metal} | S: ${ship.silicio}
-                            </div>
-                            <div style="display:flex; gap:5px;">
-                                <input type="number" id="qty-${ship.id}" class="forum-input" value="1" min="1" style="width:60px; margin:0; padding:5px;">
-                                <button class="nav-btn" onclick="ordenarNave('${ship.id}')" style="margin:0; padding:5px; font-size:0.7rem;">CONSTRUIR</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
+async function loadHangar() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: fleet } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id);
+    const container = document.getElementById('hangar-grid');
+    
+    if (!fleet || fleet.length === 0) {
+        container.innerHTML = `<p style="opacity:0.4; font-size:0.8rem; grid-column: 1/-1;">Hangar vacío.</p>`;
+        return;
+    }
+    container.innerHTML = fleet.map(item => {
+        const info = NAVES_DISPONIBLES.find(n => n.id === item.ship_id);
+        return `<div class="hangar-item"><b>${info ? info.name : item.ship_id}</b><span>${item.quantity}</span></div>`;
+    }).join('');
+}
 
-            for(let i=1; i<=37; i++) {
-                html += `
-                    <div class="ship-card empty">
-                        <div style="text-align:center;">
-                            <i class="fas fa-lock" style="font-size:1.5rem; color:#444; margin-bottom:10px;"></i>
-                            <div style="font-size:0.6rem; letter-spacing:1px; color:#555;">PLANO BLOQUEADO [${i+2}]</div>
-                        </div>
-                    </div>
-                `;
-            }
-            container.innerHTML = html;
-        }
-
-        // --- NUEVA FUNCION: CARGAR HANGAR ---
-        async function loadHangar() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const { data: fleet, error } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id);
-            
-            const container = document.getElementById('hangar-grid');
-            if (error || !fleet || fleet.length === 0) {
-                container.innerHTML = `<p style="opacity:0.4; font-size:0.8rem; grid-column: 1/-1;">Sin naves en el hangar.</p>`;
-                return;
-            }
-            
-            container.innerHTML = fleet.map(item => {
-                const info = NAVES_DISPONIBLES.find(n => n.id === item.ship_id);
-                return `
-                    <div class="hangar-item animate__animated animate__flipInX">
-                        <b>${info ? info.name : item.ship_id}</b>
-                        <span>${item.quantity}</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // --- ACTUALIZADA: ORDENAR NAVE (Resta materiales de la BD) ---
-       async function ordenarNave(id) {
+async function ordenarNave(id) {
     const ship = NAVES_DISPONIBLES.find(s => s.id === id);
     const qty = parseInt(document.getElementById(`qty-${id}`).value);
     const { data: { user } } = await supabaseClient.auth.getUser();
 
-    // 1. Apuntamos a la tabla 'players' y pedimos metal y silicio
-    const { data: player, error } = await supabaseClient
-        .from('players')
-        .select('metal, silicio') // 'silicio' con O según tu captura
-        .eq('id', user.id)
-        .single();
-    
-    if (error || !player) {
-        console.error("Error al obtener datos de players:", error);
-        return;
-    }
-
+    // Obtenemos recursos actuales (asumiendo que userResources está en game.js)
     const costM = ship.metal * qty;
     const costS = ship.silicio * qty;
 
-    // 2. Comprobamos si el jugador tiene suficiente en la tabla players
-    if (player.metal >= costM && player.silicio >= costS) {
-        
-        // 3. Restamos los materiales directamente en 'players'
+    if (userResources.metal >= costM && userResources.silicio >= costS) {
+        // Descontar en BD
         await supabaseClient.from('players').update({
-            metal: player.metal - costM,
-            silicio: player.silicio - costS
+            metal: userResources.metal - costM,
+            silicio: userResources.silicio - costS
         }).eq('id', user.id);
 
-        // 4. Lógica de la cola de construcción (se mantiene igual)
-        const newOrder = {
-            uid: Date.now(),
-            ...ship,
-            qty: qty,
-            originalQty: qty,
-            timeLeft: ship.time,
-            costMetal: costM,
-            costSilicio: costS
-        };
-
-        shipQueue.push(newOrder);
+        shipQueue.push({ ...ship, uid: Date.now(), qty, timeLeft: ship.time });
         
-        // Actualizamos la barra superior de recursos
-        if (typeof actualizarRecursosDesdeBD === "function") {
-            actualizarRecursosDesdeBD(); 
-        }
-        
+        if (typeof actualizarRecursosDesdeBD === "function") actualizarRecursosDesdeBD();
         updateShipQueueUI();
-        if(shipQueue.length === 1) processShipQueue();
+        if (shipQueue.length === 1) processShipQueue();
     } else {
-        alert("Recursos insuficientes en la terminal.");
+        alert("Recursos insuficientes para esta flota.");
     }
 }
 
-      async function cancelarConstruccion(uid) {
-    // 1. Buscamos el pedido en la cola por su ID único
-    const index = shipQueue.findIndex(item => item.uid === uid);
-    if (index === -1) return;
-
-    const order = shipQueue[index];
-    const { data: { user } } = await supabaseClient.auth.getUser();
-
-    // 2. Calculamos el 90% del reembolso
-    const refundM = Math.floor(order.costMetal * 0.9);
-    const refundS = Math.floor(order.costSilicio * 0.9);
-
-    // 3. Devolvemos los recursos a la tabla 'players'
-    const { data: player } = await supabaseClient
-        .from('players')
-        .select('metal, silicio')
-        .eq('id', user.id)
-        .single();
-
-    if (player) {
-        await supabaseClient.from('players').update({
-            metal: player.metal + refundM,
-            silicio: player.silicio + refundS
-        }).eq('id', user.id);
-    }
-
-    // 4. Si es el que se está construyendo ahora, paramos el reloj
-    if (index === 0) {
-        clearInterval(shipTimerInterval);
-    }
-
-    // 5. Quitamos de la cola y refrescamos
-    shipQueue.splice(index, 1);
-    
-    if (index === 0 && shipQueue.length > 0) {
-        processShipQueue(); // Empezamos el siguiente si borramos el primero
-    }
-
-    actualizarRecursosDesdeBD(); // Refrescar barrita superior
-    updateShipQueueUI();
-    alert(`Construcción cancelada. Se ha reembolsado el 90% (${refundM} Metal, ${refundS} Silicio).`);
-}
-        function updateShipQueueUI() {
+function updateShipQueueUI() {
     const container = document.getElementById('ship-queue-list');
-    if(shipQueue.length === 0) { 
-        container.innerHTML = "<p style='opacity:0.4'>Sin actividad en hangares...</p>"; 
-        return; 
+    if (shipQueue.length === 0) {
+        container.innerHTML = "<p style='text-align:center; opacity:0.4; font-size:0.8rem; padding:20px;'>ASTILLERO INACTIVO</p>";
+        return;
     }
-
     container.innerHTML = shipQueue.map((order, idx) => `
         <div class="queue-item">
-            <span class="cancel-x" onclick="cancelarConstruccion(${order.uid})">CANCELAR (90%)</span>
-            <div style="font-size:0.8rem; color:var(--neon-blue);">${order.qty}x ${order.name}</div>
+            <div style="font-size:0.8rem;">${order.qty}x ${order.name}</div>
             ${idx === 0 ? `
-                <div style="font-size:0.7rem; color:#888;">Construyendo... ${order.timeLeft}s</div>
-                <div class="ship-progress-bg">
-                    <div class="ship-progress-fill" style="width:${((order.time - order.timeLeft) / order.time * 100)}%"></div>
-                </div>
-            ` : '<div style="font-size:0.7rem; color:#555;">En espera...</div>'}
-        </div>
-    `).join('');
+                <div class="ship-progress-bg"><div class="ship-progress-fill" id="ship-fill" style="width:0%"></div></div>
+                <div id="ship-timer-text" style="font-size:0.7rem;">Fabricando... ${order.timeLeft}s</div>` 
+            : `<div style="font-size:0.6rem; color:gray;">En espera...</div>`}
+        </div>`).join('');
 }
 
-            container.innerHTML = shipQueue.map((order, idx) => `
-                <div class="queue-item animate__animated animate__slideInRight">
-                    <button class="cancel-x" onclick="cancelarNave(${order.uid})">CANCELAR (90%)</button>
-                    <div style="font-size:0.8rem; color:var(--neon-blue);">${order.qty}x ${order.name}</div>
-                    ${idx === 0 ? `
-                        <div style="font-size:0.6rem; color:#888; margin-top:5px;">En producción: ${order.originalQty - order.qty + 1} de ${order.originalQty}</div>
-                        <div class="ship-progress-bg"><div class="ship-progress-fill" id="ship-fill" style="width:0%"></div></div>
-                        <div style="text-align:right; font-size:0.7rem; color:var(--neon-blue); margin-top:5px;" id="ship-timer-text">${order.timeLeft}s</div>
-                    ` : `<div style="font-size:0.6rem; color:#555; margin-top:5px;">ESPERANDO TURNO...</div>`}
-                </div>
-            `).join('');
-        }
-
-        function processShipQueue() {
-            if(shipQueue.length === 0) return;
-            const current = shipQueue[0];
-
-            shipTimerInterval = setInterval(async () => {
-                current.timeLeft--;
-                const fill = document.getElementById('ship-fill');
-                const text = document.getElementById('ship-timer-text');
-                
-                if(fill) fill.style.width = ((current.time - current.timeLeft) / current.time * 100) + "%";
-                if(text) text.innerText = current.timeLeft + "s";
-
-                if(current.timeLeft <= 0) {
-                    clearInterval(shipTimerInterval);
-                    
-                    // --- GUARDAR EN BD AL TERMINAR ---
-                    await registrarNaveEnBD(current.id);
-                    
-                    current.qty--;
-                    if(current.qty > 0) {
-                        current.timeLeft = current.time;
-                        processShipQueue();
-                    } else {
-                        shipQueue.shift();
-                        processShipQueue();
-                    }
-                    updateShipQueueUI();
-                    loadHangar(); // Actualizar hangar visual
-                }
-            }, 1000);
-        }
-
-        // --- NUEVA FUNCION: PERSISTENCIA DE NAVES ---
-        async function registrarNaveEnBD(shipId) {
-            const { data: { user } } = await supabaseClient.auth.getUser();
+function processShipQueue() {
+    if(shipQueue.length === 0) return;
+    
+    const current = shipQueue[0];
+    shipTimerInterval = setInterval(async () => {
+        current.timeLeft--;
+        
+        const fill = document.getElementById('ship-fill');
+        const txt = document.getElementById('ship-timer-text');
+        
+        if(fill) fill.style.width = ((current.time - current.timeLeft) / current.time * 100) + "%";
+        if(txt) txt.innerText = `Fabricando... ${current.timeLeft}s`;
+        
+        if(current.timeLeft <= 0) {
+            clearInterval(shipTimerInterval);
+            await registrarNaveEnBD(current.id);
+            current.qty--;
             
-            // Intentar ver si el usuario ya tiene esta nave
-            const { data: existing } = await supabaseClient.from('user_fleet')
-                .select('*').eq('user_id', user.id).eq('ship_id', shipId).single();
-
-            if (existing) {
-                // Si existe, sumar 1 a la cantidad
-                await supabaseClient.from('user_fleet')
-                    .update({ quantity: existing.quantity + 1 })
-                    .eq('id', existing.id);
+            if(current.qty > 0) {
+                current.timeLeft = current.time;
+                processShipQueue();
             } else {
-                // Si no existe, crear el registro
-                await supabaseClient.from('user_fleet')
-                    .insert([{ user_id: user.id, ship_id: shipId, quantity: 1 }]);
+                shipQueue.shift();
+                processShipQueue();
             }
+            updateShipQueueUI();
+            loadHangar();
         }
+    }, 1000);
+}
 
-        // --- FUNCIONES DEL FORO ---
-        let currentTopicId = null;
-        async function loadForumTopics() {
-            const { data } = await supabaseClient.from('forum_topics').select('*').order('created_at', { ascending: false });
-            const container = document.getElementById('topics-container');
-            container.innerHTML = data?.map(t => `
-                <div class="forum-topic-card" onclick='verDetalleTema(${JSON.stringify(t).replace(/'/g, "&apos;")})'>
-                    <div style="color:var(--neon-blue); font-family:Orbitron;">${t.title}</div>
-                    <div style="font-size:0.7rem; opacity:0.6;">Por ${t.author_name} - ${new Date(t.created_at).toLocaleDateString()}</div>
-                </div>
-            `).join('') || 'No hay temas.';
-        }
+async function registrarNaveEnBD(shipId) {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: existing } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id).eq('ship_id', shipId).single();
+    
+    if (existing) {
+        await supabaseClient.from('user_fleet').update({ quantity: existing.quantity + 1 }).eq('id', existing.id);
+    } else {
+        await supabaseClient.from('user_fleet').insert([{ user_id: user.id, ship_id: shipId, quantity: 1 }]);
+    }
+}
 
-        function mostrarCrearTema() { document.getElementById('modal-new-topic').style.display = 'block'; }
-
-        async function guardarNuevoTema() {
-            const title = document.getElementById('topic-title-input').value;
-            const body = document.getElementById('topic-body-input').value;
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            await supabaseClient.from('forum_topics').insert([{ 
-                title, body, author_id: user.id, author_name: user.user_metadata.full_name || user.email 
-            }]);
-            document.getElementById('modal-new-topic').style.display = 'none';
-            loadForumTopics();
-        }
-
-        async function verDetalleTema(topic) {
-            currentTopicId = topic.id;
-            document.getElementById('forum-list-view').style.display = 'none';
-            document.getElementById('view-topic-detail').style.display = 'block';
-            document.getElementById('topic-content-full').innerHTML = `<h3>${topic.title}</h3><p>${topic.body}</p>`;
-            loadReplies(topic.id);
-        }
-
-        function cerrarDetalleTema() {
-            document.getElementById('forum-list-view').style.display = 'block';
-            document.getElementById('view-topic-detail').style.display = 'none';
-        }
-
-        async function loadReplies(id) {
-            const { data } = await supabaseClient.from('forum_replies').select('*').eq('topic_id', id);
-            document.getElementById('replies-container').innerHTML = data?.map(r => `
-                <div style="border-left:2px solid var(--neon-purple); padding-left:10px; margin-bottom:10px;">
-                    <b>${r.author_name}:</b> ${r.content}
-                </div>
-            `).join('') || '';
-        }
-
-        async function enviarRespuesta() {
-            const content = document.getElementById('reply-text').value;
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            await supabaseClient.from('forum_replies').insert([{
-                topic_id: currentTopicId, content, author_name: user.user_metadata.full_name || user.email
-            }]);
-            document.getElementById('reply-text').value = '';
-            loadReplies(currentTopicId);
-        }
-
-        // --- INICIO ---
-        // ... (tus funciones anteriores) ...
-
+// --- INICIO ---
 (async () => {
-    await syncBuildingsFromSupabase();
-    await actualizarRecursosDesdeBD();
-    renderList('resources');
-    // Intervalo de 8 segundos para la producción pasiva
-    setInterval(actualizarRecursosDesdeBD, 8000);
-})(); // Cerramos la función autoejecutable
-// AQUÍ NO DEBE HABER NINGUNA LLAVE '}' SUELTA
-</script>
+    // Esperar un momento a que game.js inicialice si es necesario
+    setTimeout(async () => {
+        if(typeof syncBuildingsFromSupabase === 'function') await syncBuildingsFromSupabase();
+        if(typeof actualizarRecursosDesdeBD === 'function') await actualizarRecursosDesdeBD();
+        showSection('resources');
+    }, 500);
+})();
+    </script>
 </body>
 </html>
+</body>
+</html>
+
 
 
