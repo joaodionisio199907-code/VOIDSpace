@@ -198,9 +198,7 @@
     </div>
 
     <script>
-        // --- DATOS DE NAVES ---
-     
-// --- DATOS DE NAVES ---
+    // --- VARIABLES GLOBALES ---
 const NAVES_DISPONIBLES = [
     { id: 'cazador_l', name: 'CAZADOR LIGERO', metal: 3000, silicio: 1000, time: 15, img: 'img/ships/interceptorarpía/interceptorarpía.png', attack: 50, shield: 10 },
     { id: 'carguero_p', name: 'CARGUERO PEQUEÑO', metal: 2000, silicio: 2000, time: 25, img: 'https://images.unsplash.com/photo-1581822261290-991b38693d1b?w=400', attack: 5, shield: 20 }
@@ -209,7 +207,7 @@ const NAVES_DISPONIBLES = [
 let shipQueue = [];
 let shipTimerInterval = null;
 
-// --- LÓGICA DE NAVEGACIÓN ---
+// --- NAVEGACIÓN ---
 function showSection(id) {
     document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -217,68 +215,57 @@ function showSection(id) {
     const section = document.getElementById('sec-' + id);
     if(section) section.classList.add('active');
     
-    if(id === 'forum') typeof loadForumTopics === 'function' && loadForumTopics();
-    if(id === 'resources' || id === 'research') { if(typeof renderList === 'function') renderList(id); }
-    if(id === 'fleet') { renderAstillero(); loadHangar(); }
+    // Activar botón
+    event.currentTarget.classList.add('active');
+
+    if(id === 'resources' || id === 'research') renderList(id);
+    if(id === 'fleet') { renderAstillero(); loadHangar(); syncShipQueueFromDB(); }
 }
 
-// --- SINCRONIZAR COLA DESDE DB ---
+// --- PERFIL Y FORO (FUNCIONES QUE FALTABAN) ---
+function abrirAjustesPerfil() { document.getElementById('modal-perfil').style.display = 'flex'; }
+function cerrarAjustesPerfil() { document.getElementById('modal-perfil').style.display = 'none'; }
+
+async function guardarPerfil() {
+    const nick = document.getElementById('edit-nickname').value;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    await supabaseClient.from('players').update({ nickname: nick }).eq('id', user.id);
+    alert("Perfil actualizado");
+    cerrarAjustesPerfil();
+}
+
+// --- ASTILLERO PERSISTENTE ---
 async function syncShipQueueFromDB() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     const { data, error } = await supabaseClient.from('ship_queue')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
+        .select('*').eq('user_id', user.id).order('created_at', { ascending: true });
 
-    if (error) return console.error("Error cargando cola:", error);
-
-    shipQueue = data || [];
-    updateShipQueueUI();
-    if (shipQueue.length > 0) processShipQueue();
+    if (!error) {
+        shipQueue = data || [];
+        updateShipQueueUI();
+        if (shipQueue.length > 0) processShipQueue();
+    }
 }
 
-// --- RENDERIZADO DEL ASTILLERO ---
 function renderAstillero() {
     const container = document.getElementById('fleet-list-container');
     container.innerHTML = NAVES_DISPONIBLES.map(ship => `
-        <div class="ship-card active animate__animated animate__fadeIn">
-            <div class="ship-img-container">
-                <div class="scan-effect"></div>
-                <img src="${ship.img}" class="ship-img">
-            </div>
+        <div class="ship-card active">
+            <div class="ship-img-container"><img src="${ship.img}" class="ship-img"></div>
             <div class="ship-info">
-                <h3 style="font-family:Orbitron; font-size:0.9rem; color:var(--neon-blue);">${ship.name}</h3>
-                <div style="font-size:0.7rem; margin:10px 0; color:#aaa;">ATK: ${ship.attack} | ESC: ${ship.shield} | ${ship.time}s</div>
-                <div style="font-size:0.7rem; color:var(--neon-blue); margin-bottom:10px;">M: ${ship.metal} | S: ${ship.silicio}</div>
-                <div style="display:flex; gap:5px;">
-                    <input type="number" id="qty-${ship.id}" class="forum-input" value="1" min="1" style="width:60px; margin:0; padding:5px;">
-                    <button class="nav-btn" onclick="ordenarNave('${ship.id}')" style="margin:0; padding:5px; font-size:0.7rem;">CONSTRUIR</button>
+                <h3 style="color:var(--neon-blue);">${ship.name}</h3>
+                <p style="font-size:0.7rem;">M: ${ship.metal} | S: ${ship.silicio} | T: ${ship.time}s</p>
+                <div style="display:flex; gap:5px; margin-top:10px;">
+                    <input type="number" id="qty-${ship.id}" class="forum-input" value="1" min="1" style="width:60px;">
+                    <button class="nav-btn" onclick="ordenarNave('${ship.id}')">CONSTRUIR</button>
                 </div>
             </div>
         </div>`).join('');
 }
 
-async function loadHangar() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    const { data: fleet } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id);
-    const container = document.getElementById('hangar-grid');
-    
-    if (!fleet || fleet.length === 0) {
-        container.innerHTML = `<p style="opacity:0.4; font-size:0.8rem; grid-column: 1/-1;">Hangar vacío.</p>`;
-        return;
-    }
-    container.innerHTML = fleet.map(item => {
-        const info = NAVES_DISPONIBLES.find(n => n.id === item.ship_id);
-        return `<div class="hangar-item"><b>${info ? info.name : item.ship_id}</b><span>${item.quantity}</span></div>`;
-    }).join('');
-}
-
-// --- ORDENAR NAVE PERSISTENTE ---
 async function ordenarNave(id) {
-    const qtyInput = document.getElementById(`qty-${id}`);
-    const qty = parseInt(qtyInput.value);
-
-    if (isNaN(qty) || qty <= 0) return alert("Cantidad no válida.");
+    const qty = parseInt(document.getElementById(`qty-${id}`).value);
+    if (qty <= 0) return;
 
     const ship = NAVES_DISPONIBLES.find(s => s.id === id);
     const { data: { user } } = await supabaseClient.auth.getUser();
@@ -287,88 +274,30 @@ async function ordenarNave(id) {
     const costS = ship.silicio * qty;
 
     if (userResources.metal >= costM && userResources.silicio >= costS) {
-        // Descontar recursos
+        // 1. Restar recursos
         await supabaseClient.from('players').update({
             metal: userResources.metal - costM,
             silicio: userResources.silicio - costS
         }).eq('id', user.id);
 
-        // Calcular tiempo (si hay algo en cola, se suma al final)
+        // 2. Calcular tiempo
         let baseTime = new Date();
-        if (shipQueue.length > 0) {
-            baseTime = new Date(shipQueue[shipQueue.length - 1].finish_at);
-        }
+        if (shipQueue.length > 0) baseTime = new Date(shipQueue[shipQueue.length - 1].finish_at);
         const finishAt = new Date(baseTime.getTime() + (ship.time * qty * 1000)).toISOString();
 
-        // Guardar en DB
+        // 3. Guardar en DB
         const { data: newOrder } = await supabaseClient.from('ship_queue').insert([{
-            user_id: user.id,
-            ship_id: ship.id,
-            quantity: qty,
-            finish_at: finishAt,
-            cost_metal: costM,
-            cost_silicio: costS
+            user_id: user.id, ship_id: ship.id, quantity: qty,
+            finish_at: finishAt, cost_metal: costM, cost_silicio: costS
         }]).select().single();
 
         shipQueue.push(newOrder);
         updateShipQueueUI();
-        if (shipQueue.length === 1 || !shipTimerInterval) processShipQueue();
-        if (typeof actualizarRecursosDesdeBD === "function") actualizarRecursosDesdeBD();
+        processShipQueue();
+        actualizarRecursosDesdeBD();
     } else {
-        alert("Recursos insuficientes.");
+        alert("Recursos insuficientes");
     }
-}
-
-function updateShipQueueUI() {
-    const container = document.getElementById('ship-queue-list');
-    if (shipQueue.length === 0) {
-        container.innerHTML = "<p style='text-align:center; opacity:0.4; font-size:0.8rem; padding:20px;'>ASTILLERO INACTIVO</p>";
-        return;
-    }
-
-    container.innerHTML = shipQueue.map((order, idx) => {
-        const shipInfo = NAVES_DISPONIBLES.find(n => n.id === order.ship_id);
-        return `
-        <div class="queue-item">
-            <span class="cancel-x" onclick="cancelarConstruccion('${order.id}')">X CANCELAR (90%)</span>
-            <div style="font-size:0.8rem; color:var(--neon-blue);">${order.quantity}x ${shipInfo ? shipInfo.name : 'Nave'}</div>
-            ${idx === 0 ? `
-                <div class="ship-progress-bg"><div class="ship-progress-fill" id="ship-fill" style="width:50%"></div></div>
-                <div id="ship-timer-text" style="font-size:0.7rem;">Calculando...</div>` 
-            : `<div style="font-size:0.6rem; color:gray; margin-top:5px;">En espera...</div>`}
-        </div>`;
-    }).join('');
-}
-
-async function cancelarConstruccion(dbId) {
-    const index = shipQueue.findIndex(q => q.id === dbId);
-    if (index === -1) return;
-
-    const pedido = shipQueue[index];
-    const { data: { user } } = await supabaseClient.auth.getUser();
-
-    const reembolsoM = Math.floor(pedido.cost_metal * 0.9);
-    const reembolsoS = Math.floor(pedido.cost_silicio * 0.9);
-
-    const { data: player } = await supabaseClient.from('players').select('metal, silicio').eq('id', user.id).single();
-    
-    await supabaseClient.from('players').update({
-        metal: player.metal + reembolsoM,
-        silicio: player.silicio + reembolsoS
-    }).eq('id', user.id);
-
-    await supabaseClient.from('ship_queue').delete().eq('id', dbId);
-
-    if (index === 0) {
-        clearInterval(shipTimerInterval);
-        shipTimerInterval = null;
-    }
-
-    shipQueue.splice(index, 1);
-    updateShipQueueUI();
-    if (shipQueue.length > 0) processShipQueue();
-    if (typeof actualizarRecursosDesdeBD === "function") actualizarRecursosDesdeBD();
-    alert("Cancelado. Reembolso del 90% procesado.");
 }
 
 function processShipQueue() {
@@ -376,27 +305,19 @@ function processShipQueue() {
 
     shipTimerInterval = setInterval(async () => {
         const current = shipQueue[0];
-        if (!current) {
-            clearInterval(shipTimerInterval);
-            shipTimerInterval = null;
-            return;
-        }
-
-        const ahora = new Date();
-        const fin = new Date(current.finish_at);
-        const restante = Math.floor((fin - ahora) / 1000);
+        const restante = Math.floor((new Date(current.finish_at) - new Date()) / 1000);
 
         const txt = document.getElementById('ship-timer-text');
-        if (txt) txt.innerText = restante > 0 ? `Fabricando... ${restante}s` : "¡Completado!";
+        const fill = document.getElementById('ship-fill');
+        
+        if (txt) txt.innerText = `Fabricando... ${restante}s`;
+        if (fill) fill.style.width = "50%"; // Puedes calcular % real aquí
 
         if (restante <= 0) {
             clearInterval(shipTimerInterval);
             shipTimerInterval = null;
-
-            // Registrar naves y borrar de la cola
             await registrarNaveEnBD(current.ship_id, current.quantity);
             await supabaseClient.from('ship_queue').delete().eq('id', current.id);
-            
             shipQueue.shift();
             updateShipQueueUI();
             loadHangar();
@@ -407,9 +328,7 @@ function processShipQueue() {
 
 async function registrarNaveEnBD(shipId, quantity) {
     const { data: { user } } = await supabaseClient.auth.getUser();
-    const { data: existing } = await supabaseClient.from('user_fleet')
-        .select('*').eq('user_id', user.id).eq('ship_id', shipId).single();
-    
+    const { data: existing } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id).eq('ship_id', shipId).single();
     if (existing) {
         await supabaseClient.from('user_fleet').update({ quantity: existing.quantity + quantity }).eq('id', existing.id);
     } else {
@@ -417,19 +336,37 @@ async function registrarNaveEnBD(shipId, quantity) {
     }
 }
 
-// --- INICIO ---
+function updateShipQueueUI() {
+    const container = document.getElementById('ship-queue-list');
+    if (shipQueue.length === 0) {
+        container.innerHTML = "<p style='opacity:0.4; font-size:0.8rem; padding:20px;'>ASTILLERO INACTIVO</p>";
+        return;
+    }
+    container.innerHTML = shipQueue.map((order, idx) => `
+        <div class="queue-item">
+            <div style="font-size:0.8rem; color:var(--neon-blue);">${order.quantity}x ${order.ship_id}</div>
+            ${idx === 0 ? `
+                <div class="ship-progress-bg"><div class="ship-progress-fill" id="ship-fill"></div></div>
+                <div id="ship-timer-text" style="font-size:0.7rem;">Iniciando...</div>` 
+            : `<div style="font-size:0.6rem; color:gray;">En espera...</div>`}
+        </div>`).join('');
+}
+
+// --- INICIO GLOBAL ---
 (async () => {
     await syncBuildingsFromSupabase();
     await actualizarRecursosDesdeBD();
-    await syncShipQueueFromDB(); // <--- Carga naves al entrar
     renderList('resources');
+    // Bucle de producción cada 8 seg
     setInterval(actualizarRecursosDesdeBD, 8000);
 })();
+
     </script>
 </body>
 </html>
 </body>
 </html>
+
 
 
 
