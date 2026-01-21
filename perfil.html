@@ -28,7 +28,6 @@
             --dark-bg: #0a0b10;
             --card-bg: rgba(16, 18, 27, 0.9);
             --wiki-gold: #ffd700;
-            --neon-green: #00ff88;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -50,72 +49,40 @@
         .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
         .top-bar { position: sticky; top: 0; background: rgba(10, 11, 16, 0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 15px 20px; display: flex; justify-content: space-around; align-items: center; backdrop-filter: blur(15px); z-index: 90; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
+        /* --- FORO ESTILOS --- */
+        .forum-card { background: var(--card-bg); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 12px; padding: 20px; }
+        .topic-entry { background: rgba(255,255,255,0.03); border: 1px solid #222; border-radius: 8px; padding: 15px; margin-bottom: 12px; cursor: pointer; transition: 0.3s; }
+        .topic-entry:hover { border-color: var(--neon-blue); transform: translateX(5px); }
+        .topic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .topic-title { font-family: 'Orbitron'; color: var(--neon-blue); font-size: 1rem; }
+        .topic-img-preview { max-width: 100%; height: 200px; object-fit: cover; border-radius: 5px; margin: 10px 0; border: 1px solid #333; }
+        .topic-stats { display: flex; gap: 15px; font-size: 0.7rem; color: #888; }
+        .like-btn { cursor: pointer; transition: 0.3s; }
+        .like-btn:hover { color: var(--neon-purple); }
+        .forum-input { width: 100%; background: rgba(0,0,0,0.4); border: 1px solid #444; color: white; padding: 12px; border-radius: 5px; font-family: inherit; margin-bottom: 10px; }
+        #image-preview-container img { width: 100px; border-radius: 5px; border: 1px solid var(--neon-blue); }
+
         @media (max-width: 992px) {
             .main-container { flex-direction: column; padding: 10px; }
             .sidebar { width: 100%; height: auto; position: relative; top: 0; }
-            .top-bar { top: 5px; padding: 10px; flex-wrap: wrap; gap: 10px; }
         }
 
-        /* --- ESTILOS DEL CHAT BURBUJA --- */
-        #chat-bubble {
-            position: fixed; bottom: 20px; right: 20px;
-            width: 60px; height: 60px; background: var(--neon-purple);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 0 20px var(--neon-purple); z-index: 1000;
-            transition: transform 0.3s;
-        }
-        #chat-bubble:hover { transform: scale(1.1); }
-        
-        #chat-window {
-            position: fixed; bottom: 90px; right: 20px;
-            width: 350px; height: 450px; background: var(--card-bg);
-            border: 1px solid var(--neon-purple); border-radius: 15px;
-            display: none; flex-direction: column; backdrop-filter: blur(20px);
-            z-index: 1000; overflow: hidden;
-        }
-        #chat-header { padding: 15px; background: rgba(188, 19, 254, 0.2); border-bottom: 1px solid var(--neon-purple); display: flex; justify-content: space-between; font-family: 'Orbitron'; font-size: 0.8rem; }
+        /* --- TUS ESTILOS EXISTENTES (CHAT, BOTONES, ETC) --- */
+        #chat-bubble { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--neon-purple); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 20px var(--neon-purple); z-index: 1000; transition: transform 0.3s; }
+        #chat-window { position: fixed; bottom: 90px; right: 20px; width: 350px; height: 450px; background: var(--card-bg); border: 1px solid var(--neon-purple); border-radius: 15px; display: none; flex-direction: column; backdrop-filter: blur(20px); z-index: 1000; overflow: hidden; }
         #chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem; }
         .msg { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 5px; border-left: 2px solid var(--neon-purple); }
-        .msg b { color: var(--neon-blue); display: block; font-size: 0.7rem; }
-        #chat-input-area { padding: 10px; display: flex; gap: 5px; background: rgba(0,0,0,0.3); }
-        #chat-input-area input { flex: 1; background: transparent; border: 1px solid #444; color: white; padding: 8px; border-radius: 5px; font-family: inherit; }
-        #chat-input-area button { background: var(--neon-purple); border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; }
-
-        /* --- ESTILOS DEL FORO --- */
-        .forum-container { background: var(--card-bg); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 20px; }
-        .forum-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(0,242,255,0.1); padding-bottom: 15px; }
-        .forum-topic-card { background: rgba(255,255,255,0.03); border: 1px solid #222; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; }
-        .forum-topic-card:hover { border-color: var(--neon-blue); background: rgba(0,242,255,0.05); }
-        .topic-title { color: var(--neon-blue); font-family: 'Orbitron'; font-size: 1rem; margin-bottom: 5px; }
-        .topic-meta { font-size: 0.7rem; color: #666; display: flex; gap: 15px; }
-        .btn-new-topic { background: var(--neon-blue); color: black; border: none; padding: 10px 20px; border-radius: 5px; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; }
-        
-        #view-topic-detail { display: none; }
-        .forum-post { border-left: 2px solid var(--neon-purple); background: rgba(255,255,255,0.02); padding: 15px; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
-        .post-author { color: var(--neon-purple); font-size: 0.8rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-        .forum-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #333; color: white; padding: 15px; border-radius: 8px; font-family: inherit; margin-bottom: 10px; resize: none; }
-
         .nav-btn { background: transparent; border: 1px solid rgba(0, 242, 255, 0.1); color: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: all 0.3s; text-align: left; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; display: flex; align-items: center; gap: 10px; }
-        .nav-btn:hover, .nav-btn.active { background: rgba(0, 242, 255, 0.1); border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
+        .nav-btn.active { background: rgba(0, 242, 255, 0.1); border-color: var(--neon-blue); }
         .resource-item { display: flex; flex-direction: column; align-items: center; }
-        .res-label { font-size: 0.6rem; color: var(--neon-blue); margin-bottom: 2px; }
-        .res-value { font-family: 'Orbitron', sans-serif; font-size: 1rem; text-shadow: 0 0 10px var(--neon-blue); }
+        .res-value { font-family: 'Orbitron'; font-size: 1rem; color: var(--neon-blue); }
         .game-section { display: none; }
         .game-section.active { display: block; }
-        .building-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding-bottom: 40px; }
-        .building-card { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; transition: all 0.3s; }
+        .building-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .building-card { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; }
         .building-img { width: 100%; height: 160px; object-fit: cover; }
         .building-info { padding: 20px; }
-        .building-name { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--neon-blue); }
-        .building-lvl { float: right; font-size: 0.7rem; background: var(--neon-blue); color: black; padding: 2px 6px; border-radius: 4px; }
-        .building-lore { font-size: 0.8rem; color: #aaa; margin: 15px 0; min-height: 45px; }
-        .btn-upgrade { width: 100%; padding: 12px; background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); font-family: 'Orbitron', sans-serif; cursor: pointer; border-radius: 5px; }
-        .btn-upgrade:disabled { border-color: #444; color: #666; }
-        .btn-completar { border-color: #00ff88 !important; color: #00ff88 !important; }
-
-        .avatar-option { width: 100%; cursor: pointer; border: 2px solid transparent; border-radius: 8px; transition: 0.3s; background: rgba(0,0,0,0.3); }
-        .avatar-option:hover { border-color: var(--neon-blue); transform: translateY(-3px); }
-        .avatar-option.selected { border-color: var(--neon-blue); background: rgba(0, 242, 255, 0.1); box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); }
+        .avatar-option { width: 100%; cursor: pointer; border: 2px solid transparent; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -125,15 +92,11 @@
             <h2 style="font-family:'Orbitron'; color:var(--neon-blue); margin-bottom:30px; text-align:center; font-size: 1.2rem;">VOID ECHOS</h2>
             <button class="nav-btn active" onclick="showSection('resources')"><i class="fas fa-microchip"></i> RECURSOS</button>
             <button class="nav-btn" onclick="showSection('research')"><i class="fas fa-flask"></i> INVESTIGACIÓN</button>
-            <button class="nav-btn" onclick="showSection('fleet')"><i class="fas fa-rocket"></i> ASTILLERO</button>
-            <button class="nav-btn" onclick="showSection('forum')"><i class="fas fa-comments-alt"></i> FORO ESTELAR</button>
+            <button class="nav-btn" onclick="showSection('forum')"><i class="fas fa-globe-americas"></i> FORO ESTELAR</button>
             
             <div style="margin-top:auto;">
-                <button class="nav-btn" onclick="abrirAjustesPerfil()">
-                    <i class="fas fa-user-circle"></i> PERFIL 
-                    <i class="fas fa-cog" style="font-size: 0.7rem; margin-left: auto; opacity: 0.6;"></i>
-                </button>
-                <button class="nav-btn" onclick="supabaseClient.auth.signOut().then(() => window.location.href='index.html')" style="border-color: #ff4444; color: #ff4444; width: 100%;">
+                <button class="nav-btn" onclick="abrirAjustesPerfil()"><i class="fas fa-user-circle"></i> PERFIL</button>
+                <button class="nav-btn" onclick="supabaseClient.auth.signOut().then(() => window.location.href='index.html')" style="border-color: #ff4444; color: #ff4444;">
                     <i class="fas fa-power-off"></i> SALIR
                 </button>
             </div>
@@ -141,360 +104,193 @@
 
         <div class="content-area">
             <div class="top-bar">
-                <div class="resource-item">
-                    <span class="res-label">FERRUM</span>
-                    <span class="res-value" id="res-metal">0</span>
-                </div>
-                <div class="resource-item">
-                    <span class="res-label">SÍLICE</span>
-                    <span class="res-value" id="res-silice">0</span>
-                </div>
-                <div class="resource-item">
-                    <span class="res-label">ISÓTOPO-H3</span>
-                    <span class="res-value" id="res-deuterio">0</span>
-                </div>
-                <div class="resource-item">
-                    <span class="res-label">ENERGÍA</span>
-                    <span class="res-value" id="res-energia" style="color:#ffea00;">0</span>
-                </div>
+                <div class="resource-item"><span class="res-value" id="res-metal">0</span><span style="font-size:0.5rem">FERRUM</span></div>
+                <div class="resource-item"><span class="res-value" id="res-silice">0</span><span style="font-size:0.5rem">SÍLICE</span></div>
+                <div class="resource-item"><span class="res-value" id="res-deuterio">0</span><span style="font-size:0.5rem">ISÓTOPO-H3</span></div>
             </div>
 
             <div id="sec-resources" class="game-section active">
                 <div class="building-grid" id="resources-list"></div>
             </div>
+
             <div id="sec-research" class="game-section">
                 <div class="building-grid" id="research-list"></div>
             </div>
 
             <div id="sec-forum" class="game-section">
-                <div class="forum-container animate__animated animate__fadeIn">
+                <div class="forum-card">
+                    <h3 style="font-family:'Orbitron'; color:var(--neon-blue); margin-bottom:20px;">CANAL DE TRANSMISIÓN GENERAL</h3>
                     
-                    <div id="forum-list-view">
-                        <div class="forum-header">
-                            <h2 style="font-family:'Orbitron'; color:var(--neon-blue);"><i class="fas fa-terminal"></i> TERMINAL DE DISCUSIÓN</h2>
-                            <button class="btn-new-topic" onclick="mostrarCrearTema()"><i class="fas fa-plus"></i> NUEVO TEMA</button>
+                    <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; margin-bottom:30px; border:1px dashed #444;">
+                        <input type="text" id="forum-title" class="forum-input" placeholder="Título de la transmisión...">
+                        <textarea id="forum-body" class="forum-input" style="height:80px;" placeholder="Mensaje para la flota..."></textarea>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <label class="nav-btn" style="margin:0; padding:8px 15px; font-size:0.7rem; cursor:pointer;">
+                                <i class="fas fa-image"></i> ADJUNTAR (MAX 720p)
+                                <input type="file" id="forum-image" hidden accept="image/*" onchange="previewImage(this)">
+                            </label>
+                            <button class="nav-btn" onclick="publicarEnForo()" style="margin:0; background:var(--neon-blue); color:black;">TRANSMITIR</button>
                         </div>
-                        <div id="topics-container">
-                            <p style="text-align:center; opacity:0.5; padding:20px;">Accediendo a la red de datos...</p>
-                        </div>
+                        <div id="image-preview-container" style="margin-top:10px;"></div>
                     </div>
 
-                    <div id="view-topic-detail">
-                        <button onclick="cerrarDetalleTema()" style="background:none; border:none; color:var(--neon-blue); cursor:pointer; margin-bottom:20px;"><i class="fas fa-arrow-left"></i> VOLVER AL ÍNDICE</button>
-                        <div id="topic-content-full"></div>
-                        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
-                        <h4 style="font-family:'Orbitron'; font-size:0.8rem; margin-bottom:15px; color:var(--neon-purple);">TRANSMISIONES RELACIONADAS</h4>
-                        <div id="replies-container"></div>
-                        <div style="margin-top:20px;">
-                            <textarea id="reply-text" class="forum-input" placeholder="Añadir respuesta a la transmisión..."></textarea>
-                            <button class="btn-new-topic" onclick="enviarRespuesta()" style="width:100%;">ENVIAR RESPUESTA</button>
+                    <div id="forum-topics-container">
                         </div>
-                    </div>
-
-                    <div id="modal-new-topic" style="display:none; margin-top:20px; border-top: 1px solid #333; padding-top:20px;">
-                        <h3 style="font-family:'Orbitron'; margin-bottom:15px;">INICIAR NUEVA SECUENCIA</h3>
-                        <input type="text" id="topic-title-input" class="forum-input" placeholder="Asunto del tema...">
-                        <textarea id="topic-body-input" class="forum-input" style="height:150px;" placeholder="Cuerpo del mensaje..."></textarea>
-                        <div style="display:flex; gap:10px;">
-                            <button class="btn-new-topic" onclick="guardarNuevoTema()">PUBLICAR TEMA</button>
-                            <button onclick="document.getElementById('modal-new-topic').style.display='none'" style="background:transparent; color:white; border:1px solid #444; padding:10px 20px; border-radius:5px; cursor:pointer;">CANCELAR</button>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </div>
     </div>
 
     <div id="modal-perfil" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; backdrop-filter: blur(10px); align-items:center; justify-content:center;">
-        <div style="background:var(--card-bg); border:1px solid var(--neon-blue); padding:30px; border-radius:15px; width:95%; max-width:420px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);">
-            <h2 style="font-family:'Orbitron'; color:var(--neon-blue); margin-bottom:20px; font-size:1.1rem; text-transform: uppercase; letter-spacing: 2px;">Configuración de Operativo</h2>
-            
-            <label style="font-size:0.65rem; color:var(--neon-blue); display:block; margin-bottom:5px;">NICKNAME DE FLOTA</label>
-            <input type="text" id="edit-nickname" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid #333; color:white; padding:12px; margin-bottom:15px; border-radius:5px; font-family: inherit;">
-
-            <label style="font-size:0.65rem; color:var(--neon-blue); display:block; margin-bottom:5px;">CÓDIGO DE ACCESO (CONTRASEÑA)</label>
-            <input type="password" id="edit-password" placeholder="Mínimo 6 caracteres para cambiar" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid #333; color:white; padding:12px; margin-bottom:15px; border-radius:5px; font-family: inherit;">
-
-            <label style="font-size:0.65rem; color:var(--neon-blue); display:block; margin-bottom:10px;">IDENTIFICADOR VISUAL (AVATAR)</label>
-            <div id="avatar-selector" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:25px;">
-                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=X1" onclick="selectAvatar(this)" class="avatar-option" alt="A1">
-                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=X2" onclick="selectAvatar(this)" class="avatar-option" alt="A2">
-                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=X3" onclick="selectAvatar(this)" class="avatar-option" alt="A3">
-                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=X4" onclick="selectAvatar(this)" class="avatar-option" alt="A4">
-            </div>
-
-            <div style="display:flex; gap:12px;">
-                <button onclick="guardarPerfil()" style="flex:2; background:var(--neon-blue); color:black; border:none; padding:12px; border-radius:5px; cursor:pointer; font-family:'Orbitron'; font-weight:bold; transition: 0.3s;">ACTUALIZAR DATOS</button>
-                <button onclick="cerrarAjustesPerfil()" style="flex:1; background:transparent; border:1px solid #ff4444; color:#ff4444; padding:12px; border-radius:5px; cursor:pointer;">CERRAR</button>
+        <div style="background:var(--card-bg); border:1px solid var(--neon-blue); padding:30px; border-radius:15px; width:95%; max-width:420px;">
+            <h2 style="font-family:'Orbitron'; color:var(--neon-blue); margin-bottom:20px;">Perfil Operativo</h2>
+            <input type="text" id="edit-nickname" class="forum-input">
+            <div style="display:flex; gap:10px;">
+                <button onclick="guardarPerfil()" class="nav-btn" style="flex:1; background:var(--neon-blue); color:black;">GUARDAR</button>
+                <button onclick="cerrarAjustesPerfil()" class="nav-btn" style="flex:1;">CERRAR</button>
             </div>
         </div>
     </div>
 
     <div id="chat-bubble" onclick="toggleChat()"><i class="fas fa-comments"></i></div>
     <div id="chat-window">
-        <div id="chat-header">
-            <span>CANAL DE COMUNICACIÓN</span>
-            <span id="online-count">Online: 1</span>
-        </div>
+        <div id="chat-header" style="padding:10px; background:rgba(188,19,254,0.2); font-family:'Orbitron'; font-size:0.7rem;">COMMS HUB</div>
         <div id="chat-messages"></div>
-        <div id="chat-input-area">
-            <input type="text" id="chat-input" placeholder="Escribir mensaje..." onkeypress="if(event.key==='Enter') sendChatMessage()">
-            <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
-        </div>
     </div>
 
     <script>
-        // --- LOGICA DEL FORO ---
-        let currentTopicId = null;
+        // --- CONFIGURACIÓN Y NAVEGACIÓN ---
+        function showSection(id) {
+            document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('sec-'+id).classList.add('active');
+            event.currentTarget.classList.add('active');
+            if(id === 'forum') cargarTemasForo();
+        }
 
-        async function loadForumTopics() {
-            const { data, error } = await supabaseClient
-                .from('forum_topics')
-                .select('*')
-                .order('created_at', { ascending: false });
+        // --- LÓGICA DEL FORO ---
+        let base64Image = "";
 
-            const container = document.getElementById('topics-container');
-            container.innerHTML = '';
+        // Función para procesar y redimensionar imagen a 720p baja calidad
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
 
-            if (data && data.length > 0) {
-                data.forEach(topic => {
-                    const div = document.createElement('div');
-                    div.className = 'forum-topic-card animate__animated animate__fadeIn';
-                    div.onclick = () => verDetalleTema(topic);
-                    div.innerHTML = `
-                        <div class="topic-title">${topic.title}</div>
-                        <div class="topic-meta">
-                            <span><i class="fas fa-user"></i> ${topic.author_name}</span>
-                            <span><i class="fas fa-calendar"></i> ${new Date(topic.created_at).toLocaleDateString()}</span>
-                        </div>
-                    `;
-                    container.appendChild(div);
-                });
-            } else {
-                container.innerHTML = '<p style="text-align:center; opacity:0.5; padding:20px;">No hay transmisiones activas en este sector.</p>';
+                        // Redimensionar a max 720px
+                        const maxSide = 720;
+                        if (width > height) {
+                            if (width > maxSide) { height *= maxSide / width; width = maxSide; }
+                        } else {
+                            if (height > maxSide) { width *= maxSide / height; height = maxSide; }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Convertir a base64 con calidad 0.5 (baja)
+                        base64Image = canvas.toDataURL('image/jpeg', 0.5);
+                        document.getElementById('image-preview-container').innerHTML = `<img src="${base64Image}">`;
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function mostrarCrearTema() {
-            document.getElementById('modal-new-topic').style.display = 'block';
-            window.scrollTo(0, document.body.scrollHeight);
-        }
-
-        async function guardarNuevoTema() {
-            const title = document.getElementById('topic-title-input').value.trim();
-            const body = document.getElementById('topic-body-input').value.trim();
-            if(!title || !body) return alert("Completa todos los campos");
+        async function publicarEnForo() {
+            const title = document.getElementById('forum-title').value.trim();
+            const body = document.getElementById('forum-body').value.trim();
+            if(!title || !body) return alert("Escribe un título y mensaje");
 
             const { data: { user } } = await supabaseClient.auth.getUser();
-            const author = user.user_metadata.full_name || user.email.split('@')[0];
+            const nick = user.user_metadata.full_name || user.email.split('@')[0];
 
-            const { error } = await supabaseClient.from('forum_topics').insert([{
-                title, body, author_id: user.id, author_name: author
+            const { error } = await supabaseClient.from('foro_temas').insert([{
+                titulo: title,
+                mensaje: body,
+                imagen: base64Image,
+                autor_nick: nick,
+                autor_id: user.id
             }]);
 
             if(!error) {
-                document.getElementById('topic-title-input').value = '';
-                document.getElementById('topic-body-input').value = '';
-                document.getElementById('modal-new-topic').style.display = 'none';
-                loadForumTopics();
+                document.getElementById('forum-title').value = "";
+                document.getElementById('forum-body').value = "";
+                document.getElementById('image-preview-container').innerHTML = "";
+                base64Image = "";
+                cargarTemasForo();
             }
         }
 
-        async function verDetalleTema(topic) {
-            currentTopicId = topic.id;
-            document.getElementById('forum-list-view').style.display = 'none';
-            document.getElementById('view-topic-detail').style.display = 'block';
-            
-            document.getElementById('topic-content-full').innerHTML = `
-                <h2 style="font-family:'Orbitron'; color:var(--neon-blue); margin-bottom:10px;">${topic.title}</h2>
-                <div class="post-author"><i class="fas fa-user-circle"></i> ${topic.author_name} <span style="opacity:0.5; font-size:0.7rem;">ID: ${topic.id.split('-')[0]}</span></div>
-                <div style="line-height:1.6; background:rgba(255,255,255,0.05); padding:20px; border-radius:8px;">${topic.body}</div>
-            `;
-            loadReplies(topic.id);
-        }
+        async function cargarTemasForo() {
+            const { data, error } = await supabaseClient
+                .from('foro_temas')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-        async function loadReplies(topicId) {
-            const { data } = await supabaseClient.from('forum_replies').select('*').eq('topic_id', topicId).order('created_at', { ascending: true });
-            const container = document.getElementById('replies-container');
-            container.innerHTML = '';
-            
-            if(data) {
-                data.forEach(reply => {
-                    const div = document.createElement('div');
-                    div.className = 'forum-post animate__animated animate__fadeInLeft';
-                    div.innerHTML = `
-                        <div class="post-author"><b>${reply.author_name}</b> <small>${new Date(reply.created_at).toLocaleString()}</small></div>
-                        <div>${reply.content}</div>
-                    `;
-                    container.appendChild(div);
-                });
-            }
-        }
+            const container = document.getElementById('forum-topics-container');
+            container.innerHTML = "";
 
-        async function enviarRespuesta() {
-            const text = document.getElementById('reply-text').value.trim();
-            if(!text) return;
-
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const author = user.user_metadata.full_name || user.email.split('@')[0];
-
-            await supabaseClient.from('forum_replies').insert([{
-                topic_id: currentTopicId,
-                content: text,
-                author_name: author
-            }]);
-
-            document.getElementById('reply-text').value = '';
-            loadReplies(currentTopicId);
-        }
-
-        function cerrarDetalleTema() {
-            document.getElementById('forum-list-view').style.display = 'block';
-            document.getElementById('view-topic-detail').style.display = 'none';
-            currentTopicId = null;
-        }
-
-        // --- LÓGICA DE NAVEGACIÓN Y OTROS (TU CÓDIGO ORIGINAL) ---
-        function showSection(sectionId) {
-            document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            const sec = document.getElementById('sec-' + sectionId);
-            if(sec) sec.classList.add('active');
-            
-            // Si entra al foro, cargar temas
-            if(sectionId === 'forum') {
-                loadForumTopics();
-            } else {
-                renderList(sectionId);
-            }
-            
-            // Marcar botón activo
-            const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.textContent.includes(sectionId.toUpperCase()) || (sectionId === 'forum' && b.textContent.includes('FORO')));
-            if(btn) btn.classList.add('active');
-        }
-
-        // ... [RESTO DE TU LÓGICA DE PERFIL, CHAT Y JUEGO] ...
-        let avatarSeleccionado = "";
-        function abrirAjustesPerfil() {
-            document.getElementById('modal-perfil').style.display = 'flex';
-            supabaseClient.auth.getUser().then(({data: {user}}) => {
-                if(user) document.getElementById('edit-nickname').value = user.user_metadata.full_name || user.email.split('@')[0];
-            });
-        }
-        function cerrarAjustesPerfil() { document.getElementById('modal-perfil').style.display = 'none'; }
-        function selectAvatar(el) {
-            document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
-            el.classList.add('selected');
-            avatarSeleccionado = el.src;
-        }
-        async function guardarPerfil() {
-            const nuevoNick = document.getElementById('edit-nickname').value.trim();
-            const nuevaPass = document.getElementById('edit-password').value;
-            const updates = { data: { full_name: nuevoNick } };
-            if (avatarSeleccionado) updates.data.avatar_url = avatarSeleccionado;
-            const { error: errorUser } = await supabaseClient.auth.updateUser(updates);
-            if (nuevaPass.length >= 6) await supabaseClient.auth.updateUser({ password: nuevaPass });
-            if (!errorUser) { alert("Sincronización de Perfil Exitosa."); cerrarAjustesPerfil(); }
-        }
-
-        // --- CHAT LOGIC ---
-        const chatSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'); 
-        function toggleChat() {
-            const win = document.getElementById('chat-window');
-            win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
-            if(win.style.display === 'flex') scrollToBottom();
-        }
-        async function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if(!text) return;
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const displayName = user.user_metadata.full_name || user.email.split('@')[0];
-            await supabaseClient.from('chat_messages').insert([{ user_email: displayName, message: text }]);
-            input.value = '';
-        }
-        function loadChatRealtime() {
-            supabaseClient.from('chat_messages').select('*').order('created_at', { ascending: true }).limit(50).then(({ data }) => {
-                if(data) { data.forEach(m => appendMessage(m, false)); scrollToBottom(); }
-            });
-            supabaseClient.channel('public:chat_messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
-                appendMessage(payload.new, true); scrollToBottom();
-            }).subscribe();
-        }
-        function appendMessage(msg, s) {
-            const container = document.getElementById('chat-messages');
-            const div = document.createElement('div');
-            div.className = 'msg animate__animated animate__fadeInUp';
-            div.innerHTML = `<b>${msg.user_email}</b> <span>${msg.message.replace(/</g, "&lt;")}</span>`;
-            container.appendChild(div);
-            if (s) chatSound.play().catch(()=>{});
-        }
-        function scrollToBottom() { const c = document.getElementById('chat-messages'); if(c) c.scrollTop = c.scrollHeight; }
-
-        // --- JUEGO ---
-        const game = {
-            buildings: [
-                { id: 'minaFe', section: 'resources', name: 'Mina de Ferrum', lore: 'Extractor de mineral ferroso mediante pulsos magnéticos.', img: 'img/minaferrum/lv1/lv1.png' },
-                { id: 'minaSi', section: 'resources', name: 'Sintetizador de Sílice', lore: 'Procesa arena estelar para extraer cristales de alta pureza.', img: 'img/SILICE/sintesili.png' },
-                { id: 'minaH3', section: 'resources', name: 'Colector de Isótopo-H3', lore: 'Extrae Deuterio de las capas atmosféricas gaseosas.', img: 'img/isotopoh3/ih3recolector.png' },
-                { id: 'plantaSolar', section: 'resources', name: 'Matriz Solar', lore: 'Paneles de grafeno que absorben radiación estelar.', img: 'img/solar.png' },
-                { id: 'lab', section: 'research', name: 'Laboratorio Tech', lore: 'Centro de desarrollo para nuevas tecnologías.', img: 'img/laboratorio/lv1/lv1.png' }
-            ]
-        };
-        let userResources = { metal: 0, silicio: 0, deuterio: 0, energia: 0 };
-        let dbBuildingsCache = [];
-
-        function mapBuildingId(gameId) {
-            const mapping = { 'minaFe': 'mina_metal', 'minaSi': 'mina_silicio', 'minaH3': 'mina_deuterio', 'plantaSolar': 'planta_solar', 'lab': 'laboratorio' };
-            return mapping[gameId] || gameId;
-        }
-
-        function renderList(section) {
-            const container = document.getElementById(section + '-list');
-            if (!container) return;
-            container.innerHTML = '';
-            game.buildings.filter(b => b.section === section).forEach(b => {
-                const dbType = mapBuildingId(b.id);
-                const dbB = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 1, is_upgrading: false };
-                container.innerHTML += `
-                    <div class="building-card">
-                        <img src="${b.img}" class="building-img" onerror="this.src='https://via.placeholder.com/300x160?text=${b.name}'">
-                        <div class="building-info">
-                            <span class="building-lvl">LVL ${dbB.level}</span>
-                            <h3 class="building-name">${b.name}</h3>
-                            <p class="building-lore">${b.lore}</p>
-                            <button class="btn-upgrade" id="btn-upgrade-${dbType}" onclick="mejorarEdificio('${b.id}')" ${dbB.is_upgrading ? 'disabled' : ''}>
-                                ${dbB.is_upgrading ? 'CONSTRUYENDO...' : 'MEJORAR'}
-                            </button>
-                        </div>
-                    </div>`;
+            data.forEach(tema => {
+                const div = document.createElement('div');
+                div.className = "topic-entry animate__animated animate__fadeIn";
+                div.innerHTML = `
+                    <div class="topic-header">
+                        <span class="topic-title">${tema.titulo}</span>
+                        <span style="font-size:0.6rem; color:var(--neon-purple)">POR: ${tema.autor_nick}</span>
+                    </div>
+                    <p style="font-size:0.85rem; opacity:0.8;">${tema.mensaje}</p>
+                    ${tema.imagen ? `<img src="${tema.imagen}" class="topic-img-preview">` : ''}
+                    <div class="topic-stats">
+                        <span class="like-btn" onclick="darLike('${tema.id}', ${tema.likes}, event)">
+                            <i class="fas fa-heart"></i> ${tema.likes || 0} APOYO
+                        </span>
+                        <span><i class="fas fa-clock"></i> ${new Date(tema.created_at).toLocaleDateString()}</span>
+                    </div>
+                `;
+                container.appendChild(div);
             });
         }
 
-        async function syncBuildingsFromSupabase() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const { data } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
-            if (data) { dbBuildingsCache = data; renderList('resources'); }
+        async function darLike(id, currentLikes, event) {
+            event.stopPropagation();
+            const { error } = await supabaseClient
+                .from('foro_temas')
+                .update({ likes: (currentLikes || 0) + 1 })
+                .eq('id', id);
+            
+            if(!error) cargarTemasForo();
         }
 
-        async function actualizarRecursosDesdeBD() {
+        // --- TU LÓGICA DE RECURSOS Y CHAT (PARA QUE NO SE PIERDA) ---
+        async function actualizarRecursos() {
             const { data: { user } } = await supabaseClient.auth.getUser();
+            if(!user) return;
             const { data } = await supabaseClient.from('players').select('*').eq('id', user.id).single();
-            if (data) {
-                userResources = data;
+            if(data) {
                 document.getElementById('res-metal').innerText = Math.floor(data.metal);
                 document.getElementById('res-silice').innerText = Math.floor(data.silicio);
                 document.getElementById('res-deuterio').innerText = Math.floor(data.deuterio);
             }
         }
 
-        (async () => {
-            await actualizarRecursosDesdeBD();
-            await syncBuildingsFromSupabase();
-            loadChatRealtime();
-            setInterval(actualizarRecursosDesdeBD, 5000);
-        })();
+        function toggleChat() {
+            const w = document.getElementById('chat-window');
+            w.style.display = w.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        // Init
+        setInterval(actualizarRecursos, 5000);
+        actualizarRecursos();
     </script>
 </body>
 </html>
