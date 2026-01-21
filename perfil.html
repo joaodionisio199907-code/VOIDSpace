@@ -26,48 +26,58 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     
     <style>
-        /* Contenedor de recursos: Ajuste para albergar el icono */
+     /* Ajuste del contenedor para que el texto no pise la imagen */
 .resource-item {
     position: relative;
-    padding-left: 45px !important; /* Espacio para el icono */
-    min-width: 120px;
+    padding-left: 45px !important; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 50px;
 }
 
-/* Estilo base para los iconos de materiales */
+/* El "contenedor" de la imagen con animación de pulso y brillo */
 .resource-item::before {
     content: "";
     position: absolute;
-    left: 10px;
+    left: 5px;
     top: 50%;
     transform: translateY(-50%);
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     background-size: contain;
     background-repeat: no-repeat;
-    filter: drop-shadow(0 0 5px var(--neon-blue));
-    animation: materialPulse 3s infinite ease-in-out;
+    background-position: center;
+    /* Animación de respiración */
+    animation: materialFloat 3s infinite ease-in-out;
+    filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.5));
+    z-index: 1;
 }
 
-/* Animación de fondo/pulso para el material */
-@keyframes materialPulse {
-    0% { transform: translateY(-50%) scale(1); filter: drop-shadow(0 0 2px var(--neon-blue)); opacity: 0.8; }
-    50% { transform: translateY(-50%) scale(1.1); filter: drop-shadow(0 0 12px var(--neon-blue)); opacity: 1; }
-    100% { transform: translateY(-50%) scale(1); filter: drop-shadow(0 0 2px var(--neon-blue)); opacity: 0.8; }
+/* Definición de la animación de fondo */
+@keyframes materialFloat {
+    0%, 100% { 
+        transform: translateY(-50%) scale(1); 
+        filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.3));
+    }
+    50% { 
+        transform: translateY(-55%) scale(1.1); 
+        filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.8));
+    }
 }
 
-/* Asignación de imágenes por ID (Sustituye las URLs por tus PNGs) */
+/* RUTAS LOCALES: Cambia 'img/NombreArchivo.png' por tus nombres reales */
+
 #cont-metal::before {
-    background-image: url('https://cdn-icons-png.flaticon.com/512/7544/7544131.png'); /* Icono Metal */
+    background-image: url('img/minaferrum/mineral/ferrum.png'); /* Ruta a tu imagen de Ferrum */
 }
 
 #cont-silice::before {
-    background-image: url('https://cdn-icons-png.flaticon.com/512/3655/3655106.png'); /* Icono Sílice */
-    filter: drop-shadow(0 0 5px #00ff88); /* Color personalizado para sílice */
+    background-image: url('img/SILICE/silice.png'); /* Ruta a tu imagen de Sílice */
 }
 
 #cont-deuterio::before {
-    background-image: url('https://cdn-icons-png.flaticon.com/512/3022/3022510.png'); /* Icono Isótopo */
-    filter: drop-shadow(0 0 5px var(--neon-purple)); /* Color personalizado para deuterio */
+    background-image: url('img/isotopoh3/isotopoh3.png'); /* Ruta a tu imagen de Isótopo */
 }
         /* MANTENEMOS TODO TU CSS ORIGINAL SIN CAMBIOS */
         .recurso-resta { position: absolute; color: #ff4444; font-weight: bold; font-family: 'Orbitron', sans-serif; font-size: 1.2rem; pointer-events: none; animation: flotarResta 1.5s ease-out forwards; z-index: 1000; text-shadow: 0 0 5px rgba(255, 68, 68, 0.5); }
@@ -394,5 +404,6 @@
 <script src="foro.js"></script>
 </body>
 </html>
+
 
 
