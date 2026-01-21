@@ -1292,33 +1292,24 @@ let userResources = { metal: 0, silicio: 0, deuterio: 0 };
 
 // --- FUNCIÓN DE RECURSOS (CORREGIDA) ---
 async function actualizarRecursosDesdeBD() {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) return;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
 
-        const { data: profile, error } = await supabaseClient
-            .from('players')
-            .select('metal, silicio, deuterio')
-            .eq('id', user.id)
-            .single();
+    const { data: player } = await supabaseClient
+        .from('players') // <--- Tabla correcta
+        .select('metal, silicio, deuterio, nivel, xp')
+        .eq('id', user.id)
+        .single();
 
-        if (error) throw error;
+    if (player) {
+        userResources.metal = player.metal;
+        userResources.silicio = player.silicio;
+        userResources.deuterio = player.deuterio;
 
-        if (profile) {
-            userResources.metal = profile.metal;
-            userResources.silicio = profile.silicio;
-            userResources.deuterio = profile.deuterio;
-
-            // Inyectar en el HTML
-            if(document.getElementById('res-ferrum')) 
-                document.getElementById('res-ferrum').innerText = Math.floor(profile.metal).toLocaleString();
-            if(document.getElementById('res-silice')) 
-                document.getElementById('res-silice').innerText = Math.floor(profile.silicio).toLocaleString();
-            if(document.getElementById('res-h3')) 
-                document.getElementById('res-h3').innerText = Math.floor(profile.deuterio).toLocaleString();
-        }
-    } catch (e) {
-        console.error("Error en recursos:", e.message);
+        // Pintar en el HTML
+        document.getElementById('res-ferrum').innerText = Math.floor(player.metal).toLocaleString();
+        document.getElementById('res-silice').innerText = Math.floor(player.silicio).toLocaleString();
+        document.getElementById('res-h3').innerText = Math.floor(player.deuterio).toLocaleString();
     }
 }
 
@@ -1401,6 +1392,7 @@ function renderList(sectionId) {
 </script>
 </body>
 </html>
+
 
 
 
