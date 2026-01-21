@@ -162,12 +162,29 @@
     </div>
 
     <script>
+        
         // --- LOGICA DEL CHAT ---
-       // --- LOGICA DEL CHAT ---
         function toggleChat() {
             const win = document.getElementById('chat-window');
             win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
             if(win.style.display === 'flex') scrollToBottom();
+        }
+
+        // Función para ver quién está online al hacer clic en el contador
+        function verQuienesEstanOnline() {
+            const channel = supabaseClient.channel('online_users');
+            const presenceState = channel.presenceState();
+            const nombres = [];
+            
+            for (const id in presenceState) {
+                presenceState[id].forEach(p => {
+                    nombres.push(p.user.split('@')[0]); // Sacamos el nombre del email
+                });
+            }
+            
+            // Eliminamos duplicados y mostramos en un alert (puedes cambiarlo por un modal luego)
+            const listaUnica = [...new Set(nombres)];
+            alert("USUARIOS CONECTADOS:\n" + (listaUnica.join('\n') || "Solo tú por ahora"));
         }
 
         async function sendChatMessage() {
@@ -190,9 +207,8 @@
         }
 
         function loadChatRealtime() {
-            // Cargar mensajes de las últimas 5 horas
+            // 1. Cargar mensajes (últimas 5 horas)
             const cincoHorasAtras = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
-
             supabaseClient.from('chat_messages')
                 .select('*')
                 .gt('created_at', cincoHorasAtras)
@@ -205,9 +221,8 @@
                     }
                 });
 
-            // Suscripción Realtime Corregida
-            supabaseClient
-                .channel('public:chat_messages')
+            // 2. Suscripción a mensajes nuevos
+            supabaseClient.channel('public:chat_messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
                 payload => {
                     appendMessage(payload.new);
@@ -215,19 +230,39 @@
                 })
                 .subscribe();
 
-            // Sistema de Presencia (Online)
+            // 3. Sistema de Presencia (Online) mejorado
             const presenceChannel = supabaseClient.channel('online_users');
+            
             presenceChannel
                 .on('presence', { event: 'sync' }, () => {
-                    const count = Object.keys(presenceChannel.presenceState()).length;
-                    document.getElementById('online-count').innerText = `Online: ${count}`;
+                    const state = presenceChannel.presenceState();
+                    const count = Object.keys(state).length;
+                    const onlineElement = document.getElementById('online-count');
+                    onlineElement.innerText = `Online: ${count}`;
+                    onlineElement.style.cursor = "pointer";
+                    onlineElement.onclick = verQuienesEstanOnline; // Asignamos el clic
                 })
                 .subscribe(async (status) => {
                     if (status === 'SUBSCRIBED') {
                         const { data: { user } } = await supabaseClient.auth.getUser();
-                        await presenceChannel.track({ user: user.email });
+                        if (user) await presenceChannel.track({ user: user.email });
                     }
                 });
+        }
+
+        function appendMessage(msg) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = 'msg animate__animated animate__fadeInUp';
+            // Seguridad básica contra scripts inyectados
+            const safeMsg = msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            div.innerHTML = `<b>${msg.user_email}</b> ${safeMsg}`;
+            container.appendChild(div);
+        }
+
+        function scrollToBottom() {
+            const c = document.getElementById('chat-messages');
+            if(c) c.scrollTop = c.scrollHeight;
         }
 
         function appendMessage(msg) {
@@ -375,5 +410,6 @@
     </script>
 </body>
 </html>
+
 
 
