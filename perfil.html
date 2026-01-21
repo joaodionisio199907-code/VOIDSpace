@@ -163,7 +163,11 @@
 
     <script>
         
-        // --- LOGICA DEL CHAT ---
+      // --- LOGICA DEL CHAT ---
+        
+        // Sonido de notificación (Audio contextual de sintetizador)
+        const chatSound = new Audio('https://codesandbox.io/api/v1/sandboxes/66m67/assets/notification.mp3'); 
+
         function toggleChat() {
             const win = document.getElementById('chat-window');
             win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
@@ -173,18 +177,18 @@
         // Función para ver quién está online al hacer clic en el contador
         function verQuienesEstanOnline() {
             const channel = supabaseClient.channel('online_users');
-            const presenceState = channel.presenceState();
-            const nombres = [];
+            const state = channel.presenceState();
+            const usuarios = [];
             
-            for (const id in presenceState) {
-                presenceState[id].forEach(p => {
-                    nombres.push(p.user.split('@')[0]); // Sacamos el nombre del email
+            // Extraer nicknames del estado de presencia
+            Object.keys(state).forEach((id) => {
+                state[id].forEach((presencia) => {
+                    usuarios.push(presencia.user.split('@')[0]);
                 });
-            }
-            
-            // Eliminamos duplicados y mostramos en un alert (puedes cambiarlo por un modal luego)
-            const listaUnica = [...new Set(nombres)];
-            alert("USUARIOS CONECTADOS:\n" + (listaUnica.join('\n') || "Solo tú por ahora"));
+            });
+
+            const listaUnica = [...new Set(usuarios)];
+            alert("OPERATIVOS EN LÍNEA:\n" + (listaUnica.map(u => `> ${u}`).join('\n') || "Solo tú, comandante."));
         }
 
         async function sendChatMessage() {
@@ -192,72 +196,72 @@
             const text = input.value.trim();
             if(!text) return;
             
-            try {
-                const { data: { user } } = await supabaseClient.auth.getUser();
-                const { error } = await supabaseClient.from('chat_messages').insert([{
-                    user_email: user.email.split('@')[0],
-                    message: text
-                }]);
-                
-                if (error) throw error;
-                input.value = '';
-            } catch (err) {
-                console.error("Error al enviar:", err.message);
-            }
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            await supabaseClient.from('chat_messages').insert([{
+                user_email: user.email.split('@')[0],
+                message: text
+            }]);
+            input.value = '';
         }
 
         function loadChatRealtime() {
-            // 1. Cargar mensajes (últimas 5 horas)
-            const cincoHorasAtras = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+            // 1. Cargar historial
             supabaseClient.from('chat_messages')
                 .select('*')
-                .gt('created_at', cincoHorasAtras)
                 .order('created_at', { ascending: true })
+                .limit(50)
                 .then(({ data }) => {
                     if(data) {
-                        document.getElementById('chat-messages').innerHTML = '';
-                        data.forEach(m => appendMessage(m));
+                        data.forEach(m => appendMessage(m, false)); // false para no sonar con el historial
                         scrollToBottom();
                     }
                 });
 
-            // 2. Suscripción a mensajes nuevos
-            supabaseClient.channel('public:chat_messages')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
-                payload => {
-                    appendMessage(payload.new);
-                    scrollToBottom();
-                })
-                .subscribe();
+            // 2. Escuchar mensajes nuevos + SONIDO
+            supabaseClient.channel('custom-insert-channel')
+                .on('postgres_changes', 
+                    { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
+                    payload => {
+                        appendMessage(payload.new, true); // true para que suene
+                        scrollToBottom();
+                    }
+                ).subscribe();
 
-            // 3. Sistema de Presencia (Online) mejorado
+            // 3. Sistema de Presencia y Nicknames
             const presenceChannel = supabaseClient.channel('online_users');
             
             presenceChannel
                 .on('presence', { event: 'sync' }, () => {
                     const state = presenceChannel.presenceState();
                     const count = Object.keys(state).length;
-                    const onlineElement = document.getElementById('online-count');
-                    onlineElement.innerText = `Online: ${count}`;
-                    onlineElement.style.cursor = "pointer";
-                    onlineElement.onclick = verQuienesEstanOnline; // Asignamos el clic
+                    const onlineText = document.getElementById('online-count');
+                    onlineText.innerText = `Online: ${count}`;
+                    onlineText.style.cursor = "pointer";
+                    onlineText.title = "Ver personal activo";
+                    onlineText.onclick = verQuienesEstanOnline;
                 })
                 .subscribe(async (status) => {
                     if (status === 'SUBSCRIBED') {
                         const { data: { user } } = await supabaseClient.auth.getUser();
-                        if (user) await presenceChannel.track({ user: user.email });
+                        if(user) await presenceChannel.track({ user: user.email });
                     }
                 });
         }
 
-        function appendMessage(msg) {
+        function appendMessage(msg, shouldPlaySound) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = 'msg animate__animated animate__fadeInUp';
-            // Seguridad básica contra scripts inyectados
+            
+            // Limpieza de seguridad
             const safeMsg = msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             div.innerHTML = `<b>${msg.user_email}</b> ${safeMsg}`;
             container.appendChild(div);
+
+            // Reproducir sonido si el chat está cerrado o es un mensaje nuevo de otro
+            if (shouldPlaySound) {
+                chatSound.play().catch(() => {}); // catch por si el navegador bloquea audio sin interactuar
+            }
         }
 
         function scrollToBottom() {
@@ -410,6 +414,7 @@
     </script>
 </body>
 </html>
+
 
 
 
