@@ -259,29 +259,30 @@ async function loadHangar() {
 }
 
 async function ordenarNave(id) {
+    const inputElement = document.getElementById(`qty-${id}`);
+    const qty = parseInt(inputElement.value);
+
+    // 🛡️ ANTI-CHEAT: Bloquear números negativos, decimales o cero
+    if (isNaN(qty) || qty <= 0) {
+        alert("⚠️ Operación no permitida: La cantidad debe ser mayor a 0.");
+        inputElement.value = 1; // Reseteamos el valor para el usuario
+        return;
+    }
+
     const ship = NAVES_DISPONIBLES.find(s => s.id === id);
-    const qty = parseInt(document.getElementById(`qty-${id}`).value);
     const { data: { user } } = await supabaseClient.auth.getUser();
 
     const costM = ship.metal * qty;
     const costS = ship.silicio * qty;
 
+    // Validación extra antes de enviar a Supabase
     if (userResources.metal >= costM && userResources.silicio >= costS) {
-        // Descontar recursos en la base de datos
         await supabaseClient.from('players').update({
             metal: userResources.metal - costM,
             silicio: userResources.silicio - costS
         }).eq('id', user.id);
 
-        // Creamos el objeto incluyendo los costos para el reembolso
-        shipQueue.push({ 
-            ...ship, 
-            uid: Date.now(), 
-            qty, 
-            timeLeft: ship.time,
-            costMetal: costM, 
-            costSilicio: costS 
-        });
+        shipQueue.push({ ...ship, uid: Date.now(), qty, timeLeft: ship.time, costMetal: costM, costSilicio: costS });
         
         if (typeof actualizarRecursosDesdeBD === "function") actualizarRecursosDesdeBD();
         updateShipQueueUI();
@@ -408,6 +409,7 @@ async function registrarNaveEnBD(shipId) {
 </html>
 </body>
 </html>
+
 
 
 
