@@ -397,18 +397,18 @@ async function registrarNaveEnBD(shipId) {
 
 // --- INICIO ---
 (async () => {
-    // Esperar un momento a que game.js inicialice si es necesario
-    setTimeout(async () => {
-        if(typeof syncBuildingsFromSupabase === 'function') await syncBuildingsFromSupabase();
-        if(typeof actualizarRecursosDesdeBD === 'function') await actualizarRecursosDesdeBD();
-        showSection('resources');
-    }, 500);
+    await syncBuildingsFromSupabase();
+    await actualizarRecursosDesdeBD();
+    await syncShipQueueFromDB(); // <--- AÑADE ESTO AQUÍ
+    renderList('resources');
+    setInterval(actualizarRecursosDesdeBD, 8000);
 })();
     </script>
 </body>
 </html>
 </body>
 </html>
+
 
 
 
