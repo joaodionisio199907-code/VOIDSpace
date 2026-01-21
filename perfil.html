@@ -56,24 +56,21 @@
         #chat-window { position: fixed; bottom: 90px; right: 20px; width: 350px; height: 450px; background: var(--card-bg); border: 1px solid var(--neon-purple); border-radius: 15px; display: none; flex-direction: column; z-index: 1000; }
         #chat-messages { flex: 1; padding: 15px; overflow-y: auto; }
 
-        /* NUEVOS ESTILOS ASTILLERO */
+        /* ASTILLERO */
         .shipyard-layout { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
         .ship-card { background: rgba(20, 22, 30, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); transition: 0.3s; position: relative; border-radius: 10px; overflow: hidden; }
         .ship-card.active:hover { border-color: var(--neon-blue); transform: translateY(-5px); }
-        .ship-card.empty { opacity: 0.3; border: 1px dashed #444; display: flex; align-items: center; justify-content: center; min-height: 380px; background: transparent; }
         .ship-img-container { position: relative; height: 160px; background: #000; }
         .ship-img { width: 100%; height: 100%; object-fit: cover; }
-        .scan-effect { position: absolute; width: 100%; height: 2px; background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); animation: scanLine 3s infinite linear; }
+        .scan-effect { position: absolute; width: 100%; height: 2px; background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); animation: scanLine 3s infinite linear; z-index: 2; }
         @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
         .ship-info { padding: 15px; }
         .queue-container { background: var(--card-bg); border: 1px solid var(--neon-purple); padding: 15px; border-radius: 15px; position: sticky; top: 20px; }
         .queue-item { background: rgba(255,255,255,0.03); margin-bottom: 10px; padding: 12px; border-left: 3px solid var(--neon-purple); position: relative; border-radius: 4px; }
-        .cancel-x { position: absolute; top: 5px; right: 5px; background: rgba(255,68,68,0.2); border: 1px solid var(--danger); color: var(--danger); font-size: 0.7rem; cursor: pointer; padding: 2px 5px; border-radius: 3px; }
-        .cancel-x:hover { background: var(--danger); color: white; }
         .ship-progress-bg { height: 4px; background: #111; margin-top: 10px; border-radius: 2px; overflow: hidden; }
         .ship-progress-fill { height: 100%; background: var(--neon-blue); width: 0%; transition: width 1s linear; }
 
-        /* Estilos Hangar */
+        /* Hangar */
         .hangar-section { margin-top: 30px; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,242,255,0.1); border-radius: 15px; padding: 20px; }
         .hangar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 15px; }
         .hangar-item { background: var(--card-bg); border: 1px solid #333; padding: 10px; border-radius: 8px; text-align: center; }
@@ -101,15 +98,15 @@
 
         <div class="content-area">
             <div class="top-bar">
-                <div class="resource-item" id="cont-metal">
+                <div class="resource-item">
                     <span style="font-size:0.6rem; color:var(--neon-blue);">FERRUM</span><br>
                     <span class="res-value" id="res-metal">0</span>
                 </div>
-                <div class="resource-item" id="cont-silice">
+                <div class="resource-item">
                     <span style="font-size:0.6rem; color:var(--neon-blue);">SÍLICE</span><br>
                     <span class="res-value" id="res-silice">0</span>
                 </div>
-                <div class="resource-item" id="cont-deuterio">
+                <div class="resource-item">
                     <span style="font-size:0.6rem; color:var(--neon-blue);">ISÓTOPO-H3</span><br>
                     <span class="res-value" id="res-deuterio">0</span>
                 </div>
@@ -127,17 +124,13 @@
                 <div class="shipyard-layout">
                     <div>
                         <div class="building-grid" id="fleet-list-container"></div>
-                        
                         <div class="hangar-section">
                             <h3 style="font-family:Orbitron; font-size:0.9rem; color:var(--neon-blue);">
                                 <i class="fas fa-warehouse"></i> HANGAR DE LA FLOTA
                             </h3>
-                            <div id="hangar-grid" class="hangar-grid">
-                                <p style="opacity:0.4; font-size:0.8rem;">Cargando inventario de naves...</p>
-                            </div>
+                            <div id="hangar-grid" class="hangar-grid"></div>
                         </div>
                     </div>
-
                     <div class="side-panel">
                         <div class="queue-container">
                             <h3 style="font-family:'Orbitron'; font-size:0.8rem; margin-bottom:15px; color:var(--neon-purple);">
@@ -173,6 +166,7 @@
                         <input type="text" id="topic-title-input" class="forum-input" placeholder="Título...">
                         <textarea id="topic-body-input" class="forum-input" style="height:100px;" placeholder="Mensaje..."></textarea>
                         <button class="nav-btn" onclick="guardarNuevoTema()">PUBLICAR</button>
+                        <button class="nav-btn" onclick="cerrarDetalleTema()" style="border-color:red">CANCELAR</button>
                     </div>
                 </div>
             </div>
@@ -182,23 +176,13 @@
     <div id="modal-perfil" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center;">
         <div style="background:var(--card-bg); padding:30px; border-radius:15px; border:1px solid var(--neon-blue); width:400px;">
             <h3 style="font-family:'Orbitron'; color:var(--neon-blue); margin-bottom:15px;">PERFIL DE OPERATIVO</h3>
-            <input type="text" id="edit-nickname" class="forum-input">
+            <input type="text" id="edit-nickname" class="forum-input" placeholder="Nuevo Nickname">
             <button class="nav-btn" onclick="guardarPerfil()">ACTUALIZAR</button>
             <button class="nav-btn" onclick="cerrarAjustesPerfil()" style="border-color:#ff4444;">CERRAR</button>
         </div>
     </div>
 
-    <div id="chat-bubble" onclick="toggleChat()"><i class="fas fa-comments"></i></div>
-    <div id="chat-window">
-        <div id="chat-messages"></div>
-        <div style="padding:10px; display:flex; gap:5px;">
-            <input type="text" id="chat-input" class="forum-input" style="margin:0;" onkeypress="if(event.key==='Enter') sendChatMessage()">
-            <button onclick="sendChatMessage()" style="background:var(--neon-purple); border:none; color:white; padding:0 10px; border-radius:5px;"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
-
     <script>
- // --- VARIABLES Y ESTADO ---
 // --- VARIABLES Y ESTADO ---
 const NAVES_DISPONIBLES = [
     { id: 'cazador_l', name: 'CAZADOR LIGERO', metal: 3000, silicio: 1000, time: 15, img: 'img/ships/interceptorarpía/interceptorarpía.png' },
@@ -218,7 +202,7 @@ function showSection(id) {
     if(section) section.classList.add('active');
     
     // Activar el botón correcto
-    const btn = document.querySelector(`button[onclick="showSection('${id}')"]`);
+    const btn = event?.currentTarget || document.querySelector(`button[onclick="showSection('${id}')"]`);
     if(btn) btn.classList.add('active');
 
     if(id === 'resources' || id === 'research') renderList(id);
@@ -230,6 +214,7 @@ function showSection(id) {
 async function cargarTemasForo() {
     const { data, error } = await supabaseClient.from('forum_topics').select('*').order('created_at', { ascending: false });
     const container = document.getElementById('topics-container');
+    if(!container) return;
     container.innerHTML = data.map(t => `
         <div class="forum-topic-card" onclick="verDetalleTema('${t.id}')">
             <h4>${t.title}</h4>
@@ -247,8 +232,6 @@ async function guardarNuevoTema() {
     const title = document.getElementById('topic-title-input').value;
     const content = document.getElementById('topic-body-input').value;
     const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    // Obtener nick del jugador
     const { data: p } = await supabaseClient.from('players').select('nickname').eq('id', user.id).single();
 
     await supabaseClient.from('forum_topics').insert([
@@ -297,28 +280,133 @@ async function enviarRespuesta() {
 
 function cerrarDetalleTema() {
     document.getElementById('view-topic-detail').style.display = 'none';
+    document.getElementById('modal-new-topic').style.display = 'none';
     document.getElementById('forum-list-view').style.display = 'block';
 }
 
-// --- MEJORAS DE EDIFICIOS (RESTA DE RECURSOS) ---
-// Sobrescribimos la función de game.js para asegurar la resta
+// --- ASTILLERO Y HANGAR ---
+function renderAstillero() {
+    const container = document.getElementById('fleet-list-container');
+    if (!container) return;
+    container.innerHTML = NAVES_DISPONIBLES.map(ship => `
+        <div class="ship-card active">
+            <div class="ship-img-container">
+                <div class="scan-effect"></div>
+                <img src="${ship.img}" class="ship-img" onerror="this.src='https://via.placeholder.com/150/000?text=NAVE'">
+            </div>
+            <div class="ship-info">
+                <h3 style="color:var(--neon-blue); font-size:0.9rem;">${ship.name}</h3>
+                <p style="font-size:0.7rem;">M: ${ship.metal} | S: ${ship.silicio} | T: ${ship.time}s</p>
+                <div style="display:flex; gap:5px; margin-top:10px;">
+                    <input type="number" id="qty-${ship.id}" class="forum-input" value="1" min="1" style="width:60px; padding:2px 5px;">
+                    <button class="nav-btn" onclick="ordenarNave('${ship.id}')" style="font-size:0.65rem; padding:5px;">CONSTRUIR</button>
+                </div>
+            </div>
+        </div>`).join('');
+}
+
+async function loadHangar() {
+    const container = document.getElementById('hangar-grid');
+    if (!container) return;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: fleet } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id);
+
+    if (!fleet || fleet.length === 0) {
+        container.innerHTML = "<p style='opacity:0.4; font-size:0.8rem;'>Hangar vacío.</p>";
+        return;
+    }
+    container.innerHTML = fleet.map(item => {
+        const ship = NAVES_DISPONIBLES.find(s => s.id === item.ship_id) || { name: item.ship_id };
+        return `<div class="hangar-item"><b>${ship.name}</b><span>${item.quantity}</span></div>`;
+    }).join('');
+}
+
+async function ordenarNave(id) {
+    const qty = parseInt(document.getElementById(`qty-${id}`).value);
+    const ship = NAVES_DISPONIBLES.find(s => s.id === id);
+    const costM = ship.metal * qty;
+    const costS = ship.silicio * qty;
+
+    if (userResources.metal >= costM && userResources.silicio >= costS) {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        await supabaseClient.from('players').update({
+            metal: userResources.metal - costM,
+            silicio: userResources.silicio - costS
+        }).eq('id', user.id);
+
+        let baseTime = new Date();
+        if (shipQueue.length > 0) baseTime = new Date(shipQueue[shipQueue.length-1].finish_at);
+        const finishAt = new Date(baseTime.getTime() + (ship.time * qty * 1000)).toISOString();
+
+        await supabaseClient.from('ship_queue').insert([{
+            user_id: user.id, ship_id: ship.id, quantity: qty, finish_at: finishAt
+        }]);
+
+        await actualizarRecursosDesdeBD();
+        syncShipQueueFromDB();
+    } else { alert("Recursos insuficientes"); }
+}
+
+async function syncShipQueueFromDB() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data } = await supabaseClient.from('ship_queue').select('*').eq('user_id', user.id).order('finish_at', { ascending: true });
+    shipQueue = data || [];
+    updateShipQueueUI();
+    if (shipQueue.length > 0) processShipQueue();
+}
+
+function updateShipQueueUI() {
+    const container = document.getElementById('ship-queue-list');
+    if (shipQueue.length === 0) {
+        container.innerHTML = "<p style='text-align:center; opacity:0.4; font-size:0.8rem; padding:20px;'>ASTILLERO INACTIVO</p>";
+        return;
+    }
+    container.innerHTML = shipQueue.map((q, i) => `
+        <div class="queue-item">
+            <div style="font-size:0.8rem;">${q.quantity}x ${q.ship_id}</div>
+            ${i === 0 ? '<div class="ship-progress-bg"><div class="ship-progress-fill" id="ship-fill" style="width:50%"></div></div>' : '<div style="font-size:0.6rem; color:gray">En espera...</div>'}
+        </div>
+    `).join('');
+}
+
+function processShipQueue() {
+    if (shipQueue.length === 0 || shipTimerInterval) return;
+    shipTimerInterval = setInterval(async () => {
+        const current = shipQueue[0];
+        const restante = Math.floor((new Date(current.finish_at) - new Date()) / 1000);
+        if (restante <= 0) {
+            clearInterval(shipTimerInterval); shipTimerInterval = null;
+            await registrarNaveEnBD(current.ship_id, current.quantity);
+            await supabaseClient.from('ship_queue').delete().eq('id', current.id);
+            syncShipQueueFromDB(); loadHangar();
+        }
+    }, 1000);
+}
+
+async function registrarNaveEnBD(shipId, quantity) {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: existing } = await supabaseClient.from('user_fleet').select('*').eq('user_id', user.id).eq('ship_id', shipId).single();
+    if (existing) {
+        await supabaseClient.from('user_fleet').update({ quantity: existing.quantity + quantity }).eq('id', existing.id);
+    } else {
+        await supabaseClient.from('user_fleet').insert([{ user_id: user.id, ship_id: shipId, quantity: quantity }]);
+    }
+}
+
+// --- MEJORAS DE EDIFICIOS ---
 async function mejorarEdificio(dbType) {
     if (!AntiCheat.isValidAmount(userResources.metal)) return;
-
     const { data: { user } } = await supabaseClient.auth.getUser();
     const edificioData = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 0 };
     const costo = calcularCosto(dbType, edificioData.level + 1);
     
     if (userResources.metal < costo) return alert("¡No tienes suficiente Ferrum!");
 
-    // RESTA REAL EN BASE DE DATOS
-    const { error } = await supabaseClient.from('players')
-        .update({ metal: userResources.metal - costo })
-        .eq('id', user.id);
+    const { error } = await supabaseClient.from('players').update({ metal: userResources.metal - costo }).eq('id', user.id);
 
     if (!error) {
-        userResources.metal -= costo; // Actualización local inmediata
-        actualizarInterfazRecursos(); // Función en game.js
+        userResources.metal -= costo;
+        actualizarInterfazRecursos();
         iniciarTemporizadorVisual(dbType, calcularTiempo(dbType, edificioData.level + 1), edificioData.level + 1);
     }
 }
@@ -330,7 +418,7 @@ async function guardarPerfil() {
     const nick = document.getElementById('edit-nickname').value;
     const { data: { user } } = await supabaseClient.auth.getUser();
     await supabaseClient.from('players').update({ nickname: nick }).eq('id', user.id);
-    alert("Identidad actualizada, Comandante.");
+    alert("Identidad actualizada.");
     cerrarAjustesPerfil();
 }
 
@@ -339,28 +427,8 @@ async function guardarPerfil() {
     await syncBuildingsFromSupabase();
     await actualizarRecursosDesdeBD();
     renderList('resources');
-    // Actualización automática de recursos cada 10 segundos
     setInterval(actualizarRecursosDesdeBD, 10000);
 })();
     </script>
 </body>
 </html>
-</body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
