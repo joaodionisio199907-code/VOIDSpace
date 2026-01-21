@@ -523,14 +523,18 @@
         }
 
         // --- INICIO ---
-        (async () => {
-            await syncBuildingsFromSupabase();
-            await actualizarRecursosDesdeBD();
-            renderList('resources');
-            loadChatRealtime();
-            setInterval(actualizarRecursosDesdeBD, 8000);
-        })();
-    </script>
+        // ... (tus funciones anteriores) ...
+
+(async () => {
+    await syncBuildingsFromSupabase();
+    await actualizarRecursosDesdeBD();
+    renderList('resources');
+    // Intervalo de 8 segundos para la producción pasiva
+    setInterval(actualizarRecursosDesdeBD, 8000);
+})(); // Cerramos la función autoejecutable
+// AQUÍ NO DEBE HABER NINGUNA LLAVE '}' SUELTA
+</script>
 </body>
 </html>
+
 
