@@ -165,8 +165,10 @@
         
       // --- LOGICA DEL CHAT ---
         
-        // Sonido de notificación (Audio contextual de sintetizador)
-        const chatSound = new Audio('https://codesandbox.io/api/v1/sandboxes/66m67/assets/notification.mp3'); 
+       // --- LOGICA DEL CHAT ---
+        
+        // Sonido de notificación
+        const chatSound = new Audio('https://www.myinstants.com/es/instant/notificacion-team-3795/?utm_source=copy&utm_medium=share'); 
 
         function toggleChat() {
             const win = document.getElementById('chat-window');
@@ -174,13 +176,11 @@
             if(win.style.display === 'flex') scrollToBottom();
         }
 
-        // Función para ver quién está online al hacer clic en el contador
         function verQuienesEstanOnline() {
             const channel = supabaseClient.channel('online_users');
             const state = channel.presenceState();
             const usuarios = [];
             
-            // Extraer nicknames del estado de presencia
             Object.keys(state).forEach((id) => {
                 state[id].forEach((presencia) => {
                     usuarios.push(presencia.user.split('@')[0]);
@@ -205,31 +205,30 @@
         }
 
         function loadChatRealtime() {
-            // 1. Cargar historial
+            // Cargar historial
             supabaseClient.from('chat_messages')
                 .select('*')
                 .order('created_at', { ascending: true })
                 .limit(50)
                 .then(({ data }) => {
                     if(data) {
-                        data.forEach(m => appendMessage(m, false)); // false para no sonar con el historial
+                        data.forEach(m => appendMessage(m, false));
                         scrollToBottom();
                     }
                 });
 
-            // 2. Escuchar mensajes nuevos + SONIDO
+            // Escuchar mensajes nuevos
             supabaseClient.channel('custom-insert-channel')
                 .on('postgres_changes', 
                     { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
                     payload => {
-                        appendMessage(payload.new, true); // true para que suene
+                        appendMessage(payload.new, true);
                         scrollToBottom();
                     }
                 ).subscribe();
 
-            // 3. Sistema de Presencia y Nicknames
+            // Presencia
             const presenceChannel = supabaseClient.channel('online_users');
-            
             presenceChannel
                 .on('presence', { event: 'sync' }, () => {
                     const state = presenceChannel.presenceState();
@@ -237,7 +236,6 @@
                     const onlineText = document.getElementById('online-count');
                     onlineText.innerText = `Online: ${count}`;
                     onlineText.style.cursor = "pointer";
-                    onlineText.title = "Ver personal activo";
                     onlineText.onclick = verQuienesEstanOnline;
                 })
                 .subscribe(async (status) => {
@@ -248,19 +246,37 @@
                 });
         }
 
-        function appendMessage(msg, shouldPlaySound) {
+        async function appendMessage(msg, shouldPlaySound) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
+            
+            // Obtener el usuario actual para comparar
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            const myNickname = user ? user.email.split('@')[0] : null;
+            
+            // Definir lista de administradores (añade aquí los nicknames que quieras)
+            const admins = [myNickname, 'admin', 'moderador']; 
+            
+            const isAdmin = admins.includes(msg.user_email);
+            
             div.className = 'msg animate__animated animate__fadeInUp';
             
-            // Limpieza de seguridad
+            // Si es admin o eres tú, aplicamos el color Wiki-Gold y un borde especial
+            if (isAdmin) {
+                div.style.borderColor = 'var(--wiki-gold)';
+                div.style.background = 'rgba(255, 215, 0, 0.05)';
+            }
+
             const safeMsg = msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            div.innerHTML = `<b>${msg.user_email}</b> ${safeMsg}`;
+            
+            // El nombre del usuario también cambia de color si es especial
+            const nameColor = isAdmin ? 'var(--wiki-gold)' : 'var(--neon-blue)';
+            
+            div.innerHTML = `<b style="color: ${nameColor}">${msg.user_email}${isAdmin ? ' [COMMAND]' : ''}</b> ${safeMsg}`;
             container.appendChild(div);
 
-            // Reproducir sonido si el chat está cerrado o es un mensaje nuevo de otro
             if (shouldPlaySound) {
-                chatSound.play().catch(() => {}); // catch por si el navegador bloquea audio sin interactuar
+                chatSound.play().catch(() => {});
             }
         }
 
@@ -414,6 +430,7 @@
     </script>
 </body>
 </html>
+
 
 
 
