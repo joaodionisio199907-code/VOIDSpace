@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VOID ECHOS | Comando Central</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="anticheat.js"></script>
+
     <script>
         const SUPABASE_URL = 'https://ojytjhamrmmuaoeflmrh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_oRK9yB9kg3o-x28YP0F9Jw_izkkkEtz';
@@ -17,7 +17,10 @@
         }
         validarAcceso();
     </script>
+     <script src="anticheat.js"></script>
     <script src="game.js"></script>
+    <script src="foro.js"></script>
+  
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
@@ -171,7 +174,7 @@
 
         let shipQueue = [];
         let shipTimerInterval = null;
-        let currentTopicId = null;
+        
 
         // --- NAVEGACIÓN GENERAL ---
         function showSection(id) {
@@ -188,68 +191,8 @@
             if(id === 'forum') cargarTemasForo();
         }
 
-        // --- FORO ---
-        async function cargarTemasForo() {
-            const { data } = await supabaseClient.from('forum_topics').select('*').order('created_at', { ascending: false });
-            const container = document.getElementById('topics-container');
-            if(!container) return;
-            container.innerHTML = data.map(t => `
-                <div class="forum-topic-card" onclick="verDetalleTema('${t.id}')">
-                    <h4>${t.title}</h4>
-                    <small>Por: ${t.author_name} | ${new Date(t.created_at).toLocaleDateString()}</small>
-                </div>
-            `).join('');
-        }
-
-        function mostrarCrearTema() {
-            document.getElementById('forum-list-view').style.display = 'none';
-            document.getElementById('modal-new-topic').style.display = 'block';
-        }
-
-        async function guardarNuevoTema() {
-            const title = document.getElementById('topic-title-input').value;
-            const content = document.getElementById('topic-body-input').value;
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const { data: p } = await supabaseClient.from('players').select('nickname').eq('id', user.id).single();
-            await supabaseClient.from('forum_topics').insert([{ author_id: user.id, author_name: p.nickname || 'Piloto Desconocido', title, content }]);
-            cerrarDetalleTema();
-            cargarTemasForo();
-        }
-
-        async function verDetalleTema(id) {
-            currentTopicId = id;
-            const { data: topic } = await supabaseClient.from('forum_topics').select('*').eq('id', id).single();
-            document.getElementById('forum-list-view').style.display = 'none';
-            document.getElementById('view-topic-detail').style.display = 'block';
-            document.getElementById('topic-content-full').innerHTML = `
-                <h2 style="color:var(--neon-blue)">${topic.title}</h2>
-                <p style="margin:15px 0; border-bottom:1px solid #333; padding-bottom:10px;">${topic.content}</p>`;
-            cargarRespuestas(id);
-        }
-
-        async function cargarRespuestas(topicId) {
-            const { data: replies } = await supabaseClient.from('forum_replies').select('*').eq('topic_id', topicId);
-            document.getElementById('replies-container').innerHTML = replies.map(r => `
-                <div style="background:rgba(255,255,255,0.05); padding:10px; margin-bottom:5px; border-radius:5px;">
-                    <b style="color:var(--neon-purple)">${r.author_name}:</b> ${r.content}
-                </div>`).join('');
-        }
-
-        async function enviarRespuesta() {
-            const content = document.getElementById('reply-text').value;
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const { data: p } = await supabaseClient.from('players').select('nickname').eq('id', user.id).single();
-            await supabaseClient.from('forum_replies').insert([{ topic_id: currentTopicId, author_name: p.nickname || 'Anónimo', content }]);
-            document.getElementById('reply-text').value = '';
-            cargarRespuestas(currentTopicId);
-        }
-
-        function cerrarDetalleTema() {
-            document.getElementById('view-topic-detail').style.display = 'none';
-            document.getElementById('modal-new-topic').style.display = 'none';
-            document.getElementById('forum-list-view').style.display = 'block';
-        }
-
+  
+    
         // --- ASTILLERO (NUEVA LÓGICA CORREGIDA) ---
         function renderAstillero() {
             const container = document.getElementById('fleet-list-container');
@@ -403,5 +346,9 @@
             setInterval(actualizarRecursosDesdeBD, 10000);
         })();
     </script>
+    <script src="anticheat.js"></script>
+<script src="game.js"></script>
+<script src="foro.js"></script>
 </body>
 </html>
+
