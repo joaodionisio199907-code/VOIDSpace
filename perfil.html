@@ -43,7 +43,7 @@
             min-height: 100vh;
         }
 
-        /* Estilos de Contenedores (Tu código original optimizado) */
+        /* Estilos de Contenedores */
         .main-container { display: flex; flex-direction: row; min-height: 100vh; padding: 20px; gap: 20px; }
         .sidebar { width: 250px; height: calc(100vh - 40px); position: sticky; top: 20px; background: var(--card-bg); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; backdrop-filter: blur(10px); z-index: 100; }
         .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
@@ -84,7 +84,6 @@
             #chat-window { width: calc(100% - 40px); height: 60vh; }
         }
 
-        /* Botones y otros estilos tuyos... */
         .nav-btn { background: transparent; border: 1px solid rgba(0, 242, 255, 0.1); color: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: all 0.3s; text-align: left; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; display: flex; align-items: center; gap: 10px; }
         .nav-btn:hover, .nav-btn.active { background: rgba(0, 242, 255, 0.1); border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
         .resource-item { display: flex; flex-direction: column; align-items: center; }
@@ -102,6 +101,11 @@
         .btn-upgrade { width: 100%; padding: 12px; background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); font-family: 'Orbitron', sans-serif; cursor: pointer; border-radius: 5px; }
         .btn-upgrade:disabled { border-color: #444; color: #666; }
         .btn-completar { border-color: #00ff88 !important; color: #00ff88 !important; }
+
+        /* --- NUEVOS ESTILOS PERFIL --- */
+        .avatar-option { width: 100%; cursor: pointer; border: 2px solid transparent; border-radius: 8px; transition: 0.3s; background: rgba(0,0,0,0.3); }
+        .avatar-option:hover { border-color: var(--neon-blue); transform: translateY(-3px); }
+        .avatar-option.selected { border-color: var(--neon-blue); background: rgba(0, 242, 255, 0.1); box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); }
     </style>
 </head>
 <body>
@@ -112,7 +116,12 @@
             <button class="nav-btn active" onclick="showSection('resources')"><i class="fas fa-microchip"></i> RECURSOS</button>
             <button class="nav-btn" onclick="showSection('research')"><i class="fas fa-flask"></i> INVESTIGACIÓN</button>
             <button class="nav-btn" onclick="showSection('fleet')"><i class="fas fa-rocket"></i> ASTILLERO</button>
+            
             <div style="margin-top:auto;">
+                <button class="nav-btn" onclick="abrirAjustesPerfil()">
+                    <i class="fas fa-user-circle"></i> PERFIL 
+                    <i class="fas fa-cog" style="font-size: 0.7rem; margin-left: auto; opacity: 0.6;"></i>
+                </button>
                 <button class="nav-btn" onclick="supabaseClient.auth.signOut().then(() => window.location.href='index.html')" style="border-color: #ff4444; color: #ff4444; width: 100%;">
                     <i class="fas fa-power-off"></i> SALIR
                 </button>
@@ -148,6 +157,31 @@
         </div>
     </div>
 
+    <div id="modal-perfil" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; backdrop-filter: blur(10px); align-items:center; justify-content:center;">
+        <div style="background:var(--card-bg); border:1px solid var(--neon-blue); padding:30px; border-radius:15px; width:95%; max-width:420px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);">
+            <h2 style="font-family:'Orbitron'; color:var(--neon-blue); margin-bottom:20px; font-size:1.1rem; text-transform: uppercase; letter-spacing: 2px;">Configuración de Operativo</h2>
+            
+            <label style="font-size:0.65rem; color:var(--neon-blue); display:block; margin-bottom:5px;">NICKNAME DE FLOTA</label>
+            <input type="text" id="edit-nickname" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid #333; color:white; padding:12px; margin-bottom:15px; border-radius:5px; font-family: inherit;">
+
+            <label style="font-size:0.65rem; color:var(--neon-blue); display:block; margin-bottom:5px;">CÓDIGO DE ACCESO (CONTRASEÑA)</label>
+            <input type="password" id="edit-password" placeholder="Mínimo 6 caracteres para cambiar" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid #333; color:white; padding:12px; margin-bottom:15px; border-radius:5px; font-family: inherit;">
+
+            <label style="font-size:0.65rem; color:var(--neon-blue); display:block; margin-bottom:10px;">IDENTIFICADOR VISUAL (AVATAR)</label>
+            <div id="avatar-selector" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:25px;">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=X1" onclick="selectAvatar(this)" class="avatar-option" alt="A1">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=X2" onclick="selectAvatar(this)" class="avatar-option" alt="A2">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=X3" onclick="selectAvatar(this)" class="avatar-option" alt="A3">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=X4" onclick="selectAvatar(this)" class="avatar-option" alt="A4">
+            </div>
+
+            <div style="display:flex; gap:12px;">
+                <button onclick="guardarPerfil()" style="flex:2; background:var(--neon-blue); color:black; border:none; padding:12px; border-radius:5px; cursor:pointer; font-family:'Orbitron'; font-weight:bold; transition: 0.3s;">ACTUALIZAR DATOS</button>
+                <button onclick="cerrarAjustesPerfil()" style="flex:1; background:transparent; border:1px solid #ff4444; color:#ff4444; padding:12px; border-radius:5px; cursor:pointer;">CERRAR</button>
+            </div>
+        </div>
+    </div>
+
     <div id="chat-bubble" onclick="toggleChat()"><i class="fas fa-comments"></i></div>
     <div id="chat-window">
         <div id="chat-header">
@@ -162,10 +196,51 @@
     </div>
 
     <script>
-        
-    // --- LOGICA DEL CHAT ---
-        
-        // Nuevo sonido: Un "Ping" electrónico limpio
+        // --- LOGICA DEL PERFIL ---
+        let avatarSeleccionado = "";
+
+        function abrirAjustesPerfil() {
+            document.getElementById('modal-perfil').style.display = 'flex';
+            supabaseClient.auth.getUser().then(({data: {user}}) => {
+                if(user) {
+                    document.getElementById('edit-nickname').value = user.user_metadata.full_name || user.email.split('@')[0];
+                }
+            });
+        }
+
+        function cerrarAjustesPerfil() {
+            document.getElementById('modal-perfil').style.display = 'none';
+        }
+
+        function selectAvatar(el) {
+            document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
+            el.classList.add('selected');
+            avatarSeleccionado = el.src;
+        }
+
+        async function guardarPerfil() {
+            const nuevoNick = document.getElementById('edit-nickname').value.trim();
+            const nuevaPass = document.getElementById('edit-password').value;
+            
+            const updates = { data: { full_name: nuevoNick } };
+            if (avatarSeleccionado) updates.data.avatar_url = avatarSeleccionado;
+
+            const { error: errorUser } = await supabaseClient.auth.updateUser(updates);
+            
+            if (nuevaPass.length >= 6) {
+                const { error: errorPass } = await supabaseClient.auth.updateUser({ password: nuevaPass });
+                if (errorPass) alert("Error Password: " + errorPass.message);
+            }
+
+            if (!errorUser) {
+                alert("Sincronización de Perfil Exitosa.");
+                cerrarAjustesPerfil();
+            } else {
+                alert("Error: " + errorUser.message);
+            }
+        }
+
+        // --- LOGICA DEL CHAT ---
         const chatSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'); 
 
         function toggleChat() {
@@ -195,37 +270,31 @@
             if(!text) return;
             
             const { data: { user } } = await supabaseClient.auth.getUser();
+            const displayName = user.user_metadata.full_name || user.email.split('@')[0];
+
             await supabaseClient.from('chat_messages').insert([{
-                user_email: user.email.split('@')[0],
+                user_email: displayName,
                 message: text
             }]);
             input.value = '';
         }
 
         function loadChatRealtime() {
-            // 1. Cargar historial
-            supabaseClient.from('chat_messages')
-                .select('*')
-                .order('created_at', { ascending: true })
-                .limit(50)
-                .then(({ data }) => {
-                    if(data) {
-                        data.forEach(m => appendMessage(m, false));
-                        scrollToBottom();
-                    }
-                });
+            supabaseClient.from('chat_messages').select('*').order('created_at', { ascending: true }).limit(50).then(({ data }) => {
+                if(data) {
+                    data.forEach(m => appendMessage(m, false));
+                    scrollToBottom();
+                }
+            });
 
-            // 2. Suscripción a mensajes nuevos
             supabaseClient.channel('public:chat_messages')
-                .on('postgres_changes', 
-                    { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
                     payload => {
                         appendMessage(payload.new, true);
                         scrollToBottom();
                     }
                 ).subscribe();
 
-            // 3. Presencia
             const presenceChannel = supabaseClient.channel('online_users');
             presenceChannel
                 .on('presence', { event: 'sync' }, () => {
@@ -247,14 +316,10 @@
         async function appendMessage(msg, shouldPlaySound) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
-            
-            // Lista de administradores (puedes añadir más nombres aquí)
-            const admins = ['tu_email_sin_arroba', 'admin', 'VoidMaster']; 
+            const admins = ['admin', 'VoidMaster', 'tu_nickname']; 
             const isAdmin = admins.includes(msg.user_email);
             
             div.className = 'msg animate__animated animate__fadeInUp';
-            
-            // Estilo Wiki-Gold para admins/tú
             if (isAdmin) {
                 div.style.borderColor = 'var(--wiki-gold)';
                 div.style.background = 'rgba(255, 215, 0, 0.05)';
@@ -271,13 +336,11 @@
                 </b> 
                 <span style="color: white; opacity: 0.9;">${safeMsg}</span>
             `;
-            
             container.appendChild(div);
 
-            // Sonido solo si es mensaje nuevo
             if (shouldPlaySound) {
-                chatSound.currentTime = 0; // Reiniciar audio por si hay spam
-                chatSound.play().catch(e => console.log("Audio bloqueado por el navegador"));
+                chatSound.currentTime = 0;
+                chatSound.play().catch(() => {});
             }
         }
 
@@ -285,11 +348,8 @@
             const c = document.getElementById('chat-messages');
             if(c) c.scrollTop = c.scrollHeight;
         }
-        
 
-
-
-        // --- TU CODIGO ORIGINAL DE LOGICA ---
+        // --- LÓGICA DE JUEGO (RECURSOS Y EDIFICIOS) ---
         const game = {
             buildings: [
                 { id: 'minaFe', section: 'resources', name: 'Mina de Ferrum', lore: 'Extractor de mineral ferroso mediante pulsos magnéticos.', img: 'img/minaferrum/lv1/lv1.png' },
@@ -306,7 +366,8 @@
         function showSection(sectionId) {
             document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('sec-' + sectionId).classList.add('active');
+            const sec = document.getElementById('sec-' + sectionId);
+            if(sec) sec.classList.add('active');
             event.currentTarget.classList.add('active');
             renderList(sectionId);
         }
@@ -360,11 +421,12 @@
 
         async function syncBuildingsFromSupabase() {
             const { data: { user } } = await supabaseClient.auth.getUser();
+            if(!user) return;
             const { data } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
             if (data) {
                 dbBuildingsCache = data;
-                const activeSec = document.querySelector('.game-section.active').id.replace('sec-', '');
-                renderList(activeSec);
+                const activeEl = document.querySelector('.game-section.active');
+                if(activeEl) renderList(activeEl.id.replace('sec-', ''));
             }
         }
 
@@ -419,12 +481,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
