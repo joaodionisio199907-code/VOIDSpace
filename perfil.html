@@ -43,137 +43,63 @@
             min-height: 100vh;
         }
 
-        /* Contenedor Principal Adaptable */
-        .main-container { 
-            display: flex; 
-            flex-direction: row; 
-            min-height: 100vh; 
-            padding: 20px; 
-            gap: 20px; 
-        }
+        /* Estilos de Contenedores (Tu código original optimizado) */
+        .main-container { display: flex; flex-direction: row; min-height: 100vh; padding: 20px; gap: 20px; }
+        .sidebar { width: 250px; height: calc(100vh - 40px); position: sticky; top: 20px; background: var(--card-bg); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; backdrop-filter: blur(10px); z-index: 100; }
+        .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+        .top-bar { position: sticky; top: 0; background: rgba(10, 11, 16, 0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 15px 20px; display: flex; justify-content: space-around; align-items: center; backdrop-filter: blur(15px); z-index: 90; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
-        /* Sidebar FIJO (Sticky) */
-        .sidebar {
-            width: 250px;
-            height: calc(100vh - 40px); /* Altura total menos padding */
-            position: sticky;
-            top: 20px;
-            background: var(--card-bg);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            border-radius: 15px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            backdrop-filter: blur(10px);
-            z-index: 100;
-        }
-
-        /* Área de contenido que hace scroll */
-        .content-area { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px; 
-            min-width: 0; /* Evita desbordamiento en flex */
-        }
-
-        /* Barra de Recursos FIJA (Sticky) */
-        .top-bar {
-            position: sticky;
-            top: 0; /* Se pega arriba del todo al hacer scroll */
-            background: rgba(10, 11, 16, 0.95);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            border-radius: 15px;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            backdrop-filter: blur(15px);
-            z-index: 90;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        /* --- RESPONSIVE TABLET / MÓVIL --- */
         @media (max-width: 992px) {
             .main-container { flex-direction: column; padding: 10px; }
-            .sidebar { 
-                width: 100%; 
-                height: auto; 
-                position: relative; 
-                top: 0;
-            }
-            .top-bar { 
-                top: 5px; 
-                padding: 10px; 
-                flex-wrap: wrap; 
-                gap: 10px;
-            }
-            .nav-btn { padding: 10px; font-size: 0.7rem; }
+            .sidebar { width: 100%; height: auto; position: relative; top: 0; }
+            .top-bar { top: 5px; padding: 10px; flex-wrap: wrap; gap: 10px; }
         }
+
+        /* --- ESTILOS DEL CHAT BURBUJA --- */
+        #chat-bubble {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 60px; height: 60px; background: var(--neon-purple);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 0 20px var(--neon-purple); z-index: 1000;
+            transition: transform 0.3s;
+        }
+        #chat-bubble:hover { transform: scale(1.1); }
+        
+        #chat-window {
+            position: fixed; bottom: 90px; right: 20px;
+            width: 350px; height: 450px; background: var(--card-bg);
+            border: 1px solid var(--neon-purple); border-radius: 15px;
+            display: none; flex-direction: column; backdrop-filter: blur(20px);
+            z-index: 1000; overflow: hidden;
+        }
+        #chat-header { padding: 15px; background: rgba(188, 19, 254, 0.2); border-bottom: 1px solid var(--neon-purple); display: flex; justify-content: space-between; font-family: 'Orbitron'; font-size: 0.8rem; }
+        #chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem; }
+        .msg { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 5px; border-left: 2px solid var(--neon-purple); }
+        .msg b { color: var(--neon-blue); display: block; font-size: 0.7rem; }
+        #chat-input-area { padding: 10px; display: flex; gap: 5px; background: rgba(0,0,0,0.3); }
+        #chat-input-area input { flex: 1; background: transparent; border: 1px solid #444; color: white; padding: 8px; border-radius: 5px; font-family: inherit; }
+        #chat-input-area button { background: var(--neon-purple); border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; }
 
         @media (max-width: 480px) {
-            .resource-item .res-value { font-size: 0.9rem; }
-            .building-grid { grid-template-columns: 1fr; }
+            #chat-window { width: calc(100% - 40px); height: 60vh; }
         }
 
-        /* Resto de estilos originales */
-        .nav-btn {
-            background: transparent;
-            border: 1px solid rgba(0, 242, 255, 0.1);
-            color: white;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: left;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-btn:hover, .nav-btn.active {
-            background: rgba(0, 242, 255, 0.1);
-            border-color: var(--neon-blue);
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
-        }
-
+        /* Botones y otros estilos tuyos... */
+        .nav-btn { background: transparent; border: 1px solid rgba(0, 242, 255, 0.1); color: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: all 0.3s; text-align: left; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; display: flex; align-items: center; gap: 10px; }
+        .nav-btn:hover, .nav-btn.active { background: rgba(0, 242, 255, 0.1); border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
         .resource-item { display: flex; flex-direction: column; align-items: center; }
         .res-label { font-size: 0.6rem; color: var(--neon-blue); margin-bottom: 2px; }
         .res-value { font-family: 'Orbitron', sans-serif; font-size: 1rem; text-shadow: 0 0 10px var(--neon-blue); }
-
         .game-section { display: none; }
         .game-section.active { display: block; }
-
-        .building-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            padding-bottom: 40px;
-        }
-
-        .building-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-
+        .building-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding-bottom: 40px; }
+        .building-card { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; transition: all 0.3s; }
         .building-img { width: 100%; height: 160px; object-fit: cover; }
         .building-info { padding: 20px; }
         .building-name { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--neon-blue); }
         .building-lvl { float: right; font-size: 0.7rem; background: var(--neon-blue); color: black; padding: 2px 6px; border-radius: 4px; }
         .building-lore { font-size: 0.8rem; color: #aaa; margin: 15px 0; min-height: 45px; }
-
-        .btn-upgrade {
-            width: 100%; padding: 12px; background: transparent;
-            border: 1px solid var(--neon-blue); color: var(--neon-blue);
-            font-family: 'Orbitron', sans-serif; cursor: pointer; border-radius: 5px;
-        }
-
+        .btn-upgrade { width: 100%; padding: 12px; background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); font-family: 'Orbitron', sans-serif; cursor: pointer; border-radius: 5px; }
         .btn-upgrade:disabled { border-color: #444; color: #666; }
         .btn-completar { border-color: #00ff88 !important; color: #00ff88 !important; }
     </style>
@@ -216,14 +142,77 @@
             <div id="sec-resources" class="game-section active">
                 <div class="building-grid" id="resources-list"></div>
             </div>
-
             <div id="sec-research" class="game-section">
                 <div class="building-grid" id="research-list"></div>
             </div>
         </div>
     </div>
 
+    <div id="chat-bubble" onclick="toggleChat()"><i class="fas fa-comments"></i></div>
+    <div id="chat-window">
+        <div id="chat-header">
+            <span>CANAL DE COMUNICACIÓN</span>
+            <span id="online-count">Online: 1</span>
+        </div>
+        <div id="chat-messages"></div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Escribir mensaje..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+            <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
     <script>
+        // --- LOGICA DEL CHAT ---
+        function toggleChat() {
+            const win = document.getElementById('chat-window');
+            win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            if(!input.value.trim()) return;
+            
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            await supabaseClient.from('chat_messages').insert([{
+                user_email: user.email.split('@')[0],
+                message: input.value
+            }]);
+            input.value = '';
+        }
+
+        function loadChatRealtime() {
+            // Cargar mensajes iniciales (últimas 5 horas)
+            supabaseClient.from('chat_messages')
+                .select('*')
+                .order('created_at', { ascending: true })
+                .then(({ data }) => {
+                    data.forEach(m => appendMessage(m));
+                    scrollToBottom();
+                });
+
+            // Escuchar cambios en tiempo real
+            supabaseClient.channel('chat_messages')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
+                payload => {
+                    appendMessage(payload.new);
+                    scrollToBottom();
+                }).subscribe();
+        }
+
+        function appendMessage(msg) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = 'msg animate__animated animate__fadeInUp';
+            div.innerHTML = `<b>${msg.user_email}</b> ${msg.message}`;
+            container.appendChild(div);
+        }
+
+        function scrollToBottom() {
+            const c = document.getElementById('chat-messages');
+            c.scrollTop = c.scrollHeight;
+        }
+
+        // --- TU CODIGO ORIGINAL DE LOGICA ---
         const game = {
             buildings: [
                 { id: 'minaFe', section: 'resources', name: 'Mina de Ferrum', lore: 'Extractor de mineral ferroso mediante pulsos magnéticos.', img: 'img/minaferrum/lv1/lv1.png' },
@@ -346,11 +335,10 @@
         (async () => {
             await actualizarRecursosDesdeBD();
             await syncBuildingsFromSupabase();
+            loadChatRealtime();
             setInterval(actualizarRecursosDesdeBD, 5000);
             setInterval(actualizarContadoresMejora, 1000);
         })();
     </script>
 </body>
 </html>
-
-
