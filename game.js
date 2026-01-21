@@ -19,8 +19,6 @@ const STATS_EDIFICIOS = {
 };
 
 // --- UTILIDADES ---
-
-// Mapea los IDs visuales a los tipos de la base de datos
 function mapBuildingId(gameId) {
     const mapping = {
         'minaFe': 'mina_metal',
@@ -39,7 +37,6 @@ async function syncBuildingsFromSupabase() {
 }
 
 // --- LÓGICA DE INTERFAZ (UI) ---
-
 function renderList(section) {
     const container = document.getElementById(section + '-list');
     if (!container) return;
@@ -80,7 +77,6 @@ function mostrarAnimacionRecursos(idContenedor, cantidad) {
 }
 
 // --- LÓGICA DE CÁLCULOS ---
-
 function calcularCosto(type, nivel) {
     const stat = STATS_EDIFICIOS[type] || { costoBase: 100, crecimiento: 1.5 };
     return Math.floor(stat.costoBase * Math.pow(stat.crecimiento, nivel > 0 ? nivel - 1 : 0));
@@ -96,13 +92,14 @@ function calcularProduccion(type, nivel) {
     return (nivel || 0) * stat.prodBase;
 }
 
-// --- COMUNICACIÓN SUPABASE ---
-
+// --- COMUNICACIÓN SUPABASE (TABLA PLAYERS) ---
 async function actualizarRecursosDesdeBD() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
 
+    // Apuntamos a 'players'
     const { data: player } = await supabaseClient.from('players').select('*').eq('id', user.id).single();
+    
     if (player) {
         let plusMetal = 0, plusSilicio = 0, plusDeuterio = 0;
         dbBuildingsCache.forEach(ed => {
@@ -113,7 +110,7 @@ async function actualizarRecursosDesdeBD() {
 
         const nuevosRecursos = {
             metal: player.metal + plusMetal,
-            silicio: player.silicio + plusSilicio,
+            silicio: player.silicio + plusSilicio, // Usamos 'silicio' con O
             deuterio: player.deuterio + plusDeuterio
         };
 
@@ -144,6 +141,7 @@ async function mejorarEdificio(gameId) {
     }
 
     btn.disabled = true;
+    // Descontamos de 'players'
     await supabaseClient.from('players').update({ metal: userResources.metal - costo }).eq('id', user.id);
 
     let restante = tiempo;
@@ -167,5 +165,4 @@ async function finalizarMejora(userId, dbType, nuevoNivel) {
     renderList('research');
 }
 
-// Función placeholder para el chat
 function loadChatRealtime() { console.log("Chat inicializado..."); }
