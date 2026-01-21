@@ -1405,39 +1405,48 @@ function renderList(section) {
     if (!container) return;
     container.innerHTML = '';
 
-    const filtered = game.buildings.filter(b => b.section === section);
+    // 1. Filtramos los edificios base de la constante 'game'
+    const baseBuildings = game.buildings.filter(b => b.section === section);
 
-    filtered.forEach(b => {
+    baseBuildings.forEach(b => {
+        // 2. Buscamos si este edificio existe en la caché de la base de datos
         const dbType = mapBuildingId(b.id);
-        // Buscamos datos reales de la DB o usamos valores por defecto si no existen
-        const dbB = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 1, is_upgrading: false };
+        const dbData = dbBuildingsCache.find(db => db.building_type === dbType);
         
-        const currentLevel = dbB.level;
+        // 3. Si no hay datos en la DB aún, usamos nivel 1 por defecto
+        const currentLevel = dbData ? dbData.level : (b.lvl || 0);
+        const isUpgrading = dbData ? dbData.is_upgrading : false;
         const cost = getUpgradeCost(currentLevel);
 
-        // Generamos el HTML respetando tus clases de CSS originales
+        // 4. Construimos la tarjeta con tus estilos originales
         container.innerHTML += `
             <div class="building-card animate__animated animate__fadeIn">
-                <img src="${b.img || 'img/minaferrum/lv1/lv1.png'}" class="building-img" alt="${b.name}">
+                <img src="${b.img || 'img/placeholder.png'}" class="building-img" 
+                     onerror="this.src='https://via.placeholder.com/150/000000/00f2ff?text=CONSTRUCCION'">
                 <div class="building-info">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span class="building-name">${b.name}</span>
-                        <span class="building-lvl">NIVEL ${currentLevel}</span>
+                        <span class="building-name" style="color:var(--neon-blue); font-weight:bold;">${b.name}</span>
+                        <span class="building-lvl" style="background:var(--neon-blue); color:black; padding:2px 6px; border-radius:3px; font-size:0.7rem;">
+                            LVL ${currentLevel}
+                        </span>
                     </div>
-                    <p style="font-size:0.75rem; color:#888; margin:8px 0; min-height:30px;">${b.lore}</p>
+                    <p style="font-size:0.75rem; color:#888; margin:8px 0; line-height:1.2;">${b.lore}</p>
                     
-                    <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
-                        <div style="font-size:0.7rem; color:#aaa; text-transform:uppercase;">Requerido para nivel ${currentLevel + 1}:</div>
-                        <div style="font-size:0.85rem; color:var(--neon-blue); font-family:'Share Tech Mono';">
-                            <i class="fas fa-cube"></i> ${cost.toLocaleString()} FERRUM
+                    <div style="border-left: 2px solid var(--neon-blue); padding-left:10px; margin-bottom:12px;">
+                        <div style="font-size:0.6rem; color:#666;">COSTE SIGUIENTE NIVEL</div>
+                        <div style="font-size:0.9rem; color:#eee; font-family:'Share Tech Mono';">
+                             <i class="fas fa-cube" style="color:var(--neon-blue);"></i> ${cost.toLocaleString()} <span style="font-size:0.7rem;">FERRUM</span>
                         </div>
                     </div>
 
                     <button class="btn-upgrade" 
                             id="btn-upgrade-${dbType}" 
                             onclick="mejorarEdificio('${b.id}')"
-                            ${dbB.is_upgrading ? 'disabled' : ''}>
-                        ${dbB.is_upgrading ? '<i class="fas fa-hammer fa-spin"></i> CONSTRUYENDO...' : '<i class="fas fa-chevron-circle-up"></i> MEJORAR'}
+                            ${isUpgrading ? 'disabled' : ''}
+                            style="width:100%; position:relative; overflow:hidden;">
+                        ${isUpgrading ? 
+                            '<i class="fas fa-sync fa-spin"></i> CALCULANDO...' : 
+                            '<i class="fas fa-arrow-up"></i> MEJORAR ESTRUCTURA'}
                     </button>
                 </div>
             </div>`;
@@ -1497,12 +1506,14 @@ function renderList(section) {
         }
     });
 }
-
-// Ejecutar el contador cada segundo
-setInterval(actualizarContadoresMejora, 1000);
+// Asegúrate de que esto esté al final de tu <script>
+setInterval(() => {
+    actualizarContadoresMejora();
+}, 1000);
 </script>
 </body>
 </html>
+
 
 
 
