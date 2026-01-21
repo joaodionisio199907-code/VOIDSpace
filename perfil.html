@@ -450,29 +450,33 @@
             return mapping[gameId] || gameId;
         }
 
-        function renderList(section) {
-            const container = document.getElementById(section + '-list');
-            if (!container) return;
-            container.innerHTML = '';
-            game.buildings.filter(b => b.section === section).forEach(b => {
-                const dbType = mapBuildingId(b.id);
-                const dbB = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 1, is_upgrading: false };
-                container.innerHTML += `
-                    <div class="building-card">
-                        <img src="${b.img}" 
-     class="building-img" 
-     onerror="this.onerror=null; this.src='https://placehold.co/300x160/0a0b10/00f2ff?text=${encodeURIComponent(b.name)}'">
-                        <div class="building-info">
-                            <span class="building-lvl">LVL ${dbB.level}</span>
-                            <h3 class="building-name">${b.name}</h3>
-                            <p class="building-lore">${b.lore}</p>
-                            <button class="btn-upgrade" id="btn-upgrade-${dbType}" onclick="mejorarEdificio('${b.id}')" ${dbB.is_upgrading ? 'disabled' : ''}>
-                                ${dbB.is_upgrading ? 'CONSTRUYENDO...' : 'MEJORAR'}
-                            </button>
-                        </div>
-                    </div>`;
-            });
-        }
+       // Busca esta parte en tu HTML y actualízala
+function renderList(section) {
+    const container = document.getElementById(section + '-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    game.buildings.filter(b => b.section === section).forEach(b => {
+        const dbType = mapBuildingId(b.id);
+        const dbB = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 1 };
+        
+        // CÁLCULO DE COSTO PARA EL BOTÓN
+        const costoProximo = calcularCosto(dbType, dbB.level + 1);
+
+        container.innerHTML += `
+            <div class="building-card">
+                <img src="${b.img}" class="building-img" onerror="this.src='https://placehold.co/300x160?text=${b.name}'">
+                <div class="building-info">
+                    <span class="building-lvl">LVL ${dbB.level}</span>
+                    <h3 class="building-name">${b.name}</h3>
+                    <p class="building-lore">${b.lore}</p>
+                    <button class="btn-upgrade" id="btn-upgrade-${dbType}" onclick="mejorarEdificio('${b.id}')">
+                        MEJORAR (${costoProximo} Fe)
+                    </button>
+                </div>
+            </div>`;
+    });
+}
 
         async function syncBuildingsFromSupabase() {
             const { data: { user } } = await supabaseClient.auth.getUser();
@@ -539,6 +543,7 @@
     </script>
 </body>
 </html>
+
 
 
 
