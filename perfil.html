@@ -1338,6 +1338,60 @@ async function syncBuildingsFromSupabase() {
         renderList('resources'); 
     }
 }
+async function mejorarEdificio(buildingId) {
+    console.log("Intentando mejorar edificio:", buildingId);
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    
+    // Buscamos los datos actuales del edificio en nuestra caché
+    const building = dbBuildingsCache.find(b => b.building_type === buildingId);
+    
+    if (!user || !building) {
+        console.error("Usuario o edificio no encontrado");
+        return;
+    }
+
+    // Calculamos el coste según el nivel actual
+    const coste = getUpgradeCost(building.level);
+
+    // 1. Verificación de recursos
+    if (userResources.metal < coste) {
+        alert(`No tienes suficiente Ferrum. Necesitas ${coste} y tienes ${Math.floor(userResources.metal)}`);
+        return;
+    }
+
+    // 2. Cobro en la tabla 'players'
+    const { error: errorPago } = await supabaseClient
+        .from('players')
+        .update({ metal: userResources.metal - coste })
+        .eq('id', user.id);
+
+    if (errorPago) {
+        console.error("Error al procesar el pago:", errorPago.message);
+        return;
+    }
+
+    // 3. Iniciar la construcción en la tabla 'buildings'
+    // Calculamos cuánto tardará
+    const upgradeDuration = getUpgradeTime(building.level);
+    const upgradeEnd = new Date(Date.now() + upgradeDuration);
+
+    const { error: upgradeError } = await supabaseClient
+        .from('buildings')
+        .update({
+            is_upgrading: true,
+            upgrade_end: upgradeEnd.toISOString()
+        })
+        .eq('id', building.id);
+
+    if (!upgradeError) {
+        console.log("Pago realizado y mejora iniciada");
+        // Actualizamos la interfaz inmediatamente
+        await actualizarRecursosDesdeBD();
+        await syncBuildingsFromSupabase();
+    } else {
+        console.error("Error al iniciar mejora:", upgradeError.message);
+    }
+}    
 
 function renderList(sectionId) {
     const container = document.getElementById(sectionId + '-list');
@@ -1392,6 +1446,7 @@ function renderList(sectionId) {
 </script>
 </body>
 </html>
+
 
 
 
