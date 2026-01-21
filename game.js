@@ -34,6 +34,9 @@ async function syncBuildingsFromSupabase() {
     if (!user) return;
     const { data } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
     dbBuildingsCache = data || [];
+    
+    // Al sincronizar, revisamos si hay mejoras que terminaron mientras estábamos desconectados
+    verificarMejorasActivas();
 }
 
 // --- LÓGICA DE INTERFAZ (UI) ---
@@ -44,7 +47,7 @@ function renderList(section) {
     let htmlContent = '';
     DATA_VISUAL_EDIFICIOS.filter(b => b.section === section).forEach(b => {
         const dbType = mapBuildingId(b.id);
-        const edificioData = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 0 };
+        const edificioData = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 0, finish_at: null };
         const costoProximo = calcularCosto(dbType, edificioData.level + 1);
 
         htmlContent += `
@@ -97,7 +100,6 @@ async function actualizarRecursosDesdeBD() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
 
-    // Apuntamos a 'players'
     const { data: player } = await supabaseClient.from('players').select('*').eq('id', user.id).single();
     
     if (player) {
@@ -110,7 +112,7 @@ async function actualizarRecursosDesdeBD() {
 
         const nuevosRecursos = {
             metal: player.metal + plusMetal,
-            silicio: player.silicio + plusSilicio, // Usamos 'silicio' con O
+            silicio: player.silicio + plusSilicio,
             deuterio: player.deuterio + plusDeuterio
         };
 
@@ -125,13 +127,35 @@ async function actualizarRecursosDesdeBD() {
     }
 }
 
+// --- NUEVA FUNCIÓN: VERIFICAR MEJORAS AL CARGAR ---
+function verificarMejorasActivas() {
+    const ahora = new Date();
+    dbBuildingsCache.forEach(ed => {
+        if (ed.finish_at) {
+            const fechaFin = new Date(ed.finish_at);
+            const segundosRestantes = Math.floor((fechaFin - ahora) / 1000);
+
+            if (segundosRestantes > 0) {
+                iniciarTemporizadorVisual(ed.building_type, segundosRestantes, ed.level + 1);
+            } else {
+                // Si el tiempo ya pasó, finalizamos la mejora automáticamente
+                finalizarMejora(ed.user_id, ed.building_type, ed.level + 1);
+            }
+        }
+    });
+}
+
+// --- MEJORAR EDIFICIO ACTUALIZADO ---
 async function mejorarEdificio(gameId) {
     const dbType = mapBuildingId(gameId);
     const { data: { user } } = await supabaseClient.auth.getUser();
     const edificioData = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 0 };
     
+    // Anti-cheat básico: No permitir dos mejoras simultáneas del mismo edificio
+    if (edificioData.finish_at && new Date(edificioData.finish_at) > new Date()) return;
+
     const costo = calcularCosto(dbType, edificioData.level + 1);
-    const tiempo = calcularTiempo(dbType, edificioData.level + 1);
+    const tiempoSegundos = calcularTiempo(dbType, edificioData.level + 1);
     const btn = document.getElementById(`btn-upgrade-${dbType}`);
 
     if (userResources.metal < costo) {
@@ -140,24 +164,51 @@ async function mejorarEdificio(gameId) {
         return alert("Recursos insuficientes.");
     }
 
-    btn.disabled = true;
-    // Descontamos de 'players'
-    await supabaseClient.from('players').update({ metal: userResources.metal - costo }).eq('id', user.id);
+    // 1. Calcular hora de finalización
+    const ahora = new Date();
+    const finishAt = new Date(ahora.getTime() + tiempoSegundos * 1000).toISOString();
 
-    let restante = tiempo;
+    // 2. Descontar y Guardar en BD con fecha de fin
+    await supabaseClient.from('players').update({ metal: userResources.metal - costo }).eq('id', user.id);
+    await supabaseClient.from('buildings').upsert({ 
+        user_id: user.id, 
+        building_type: dbType, 
+        level: edificioData.level,
+        finish_at: finishAt
+    }, { onConflict: 'user_id, building_type' });
+
+    await syncBuildingsFromSupabase(); // Refrescar cache local
+    iniciarTemporizadorVisual(dbType, tiempoSegundos, edificioData.level + 1);
+}
+
+function iniciarTemporizadorVisual(dbType, segundos, nuevoNivel) {
+    const btn = document.getElementById(`btn-upgrade-${dbType}`);
+    if (!btn) return;
+
+    btn.disabled = true;
+    let restante = segundos;
+
     const timer = setInterval(() => {
-        btn.innerHTML = `<i class="fas fa-hourglass-half"></i> ${restante}s`;
+        const btnActual = document.getElementById(`btn-upgrade-${dbType}`);
+        if (btnActual) btnActual.innerHTML = `<i class="fas fa-hourglass-half"></i> ${restante}s`;
+        
         restante--;
         if (restante < 0) {
             clearInterval(timer);
-            finalizarMejora(user.id, dbType, edificioData.level + 1);
+            supabaseClient.auth.getUser().then(({data}) => {
+                finalizarMejora(data.user.id, dbType, nuevoNivel);
+            });
         }
     }, 1000);
 }
 
 async function finalizarMejora(userId, dbType, nuevoNivel) {
+    // Seteamos finish_at en null para indicar que terminó
     await supabaseClient.from('buildings').upsert({ 
-        user_id: userId, building_type: dbType, level: nuevoNivel 
+        user_id: userId, 
+        building_type: dbType, 
+        level: nuevoNivel,
+        finish_at: null 
     }, { onConflict: 'user_id, building_type' });
 
     await syncBuildingsFromSupabase();
