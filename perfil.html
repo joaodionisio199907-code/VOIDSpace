@@ -423,51 +423,29 @@
 
 
 
-            <div id="sec-fleet" class="game-section">
+           <div id="section-fleet" class="game-section" style="display:none;">
+    <div class="section-header">
+        <h2><i class="fas fa-rocket"></i> ASTILLERO ESTELAR</h2>
+        <p class="section-lore">Diseña y construye la vanguardia de tu imperio espacial.</p>
+    </div>
 
-                <div class="shipyard-layout">
+    <div id="fleet-list-container" class="ships-grid">
+        </div>
 
-                    <div>
+    <div class="queue-section">
+        <h4 class="sub-title"><i class="fas fa-tools"></i> LÍNEA DE ENSAMBLAJE</h4>
+        <div id="ship-queue-container">
+            <p style="opacity:0.5; font-size:0.8rem;">No hay proyectos en curso.</p>
+        </div>
+    </div>
 
-                        <div class="building-grid" id="fleet-list-container"></div>
-
-                        <div class="hangar-section">
-
-                            <h3 style="font-family:Orbitron; font-size:0.9rem; color:var(--neon-blue);">
-
-                                <i class="fas fa-warehouse"></i> HANGAR DE LA FLOTA
-
-                            </h3>
-
-                            <div id="hangar-grid" class="hangar-grid"></div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="side-panel">
-
-                        <div class="queue-container">
-
-                            <h3 style="font-family:'Orbitron'; font-size:0.8rem; margin-bottom:15px; color:var(--neon-purple);">
-
-                                <i class="fas fa-tools"></i> COLA DE CONSTRUCCIÓN
-
-                            </h3>
-
-                            <div id="ship-queue-list">
-
-                                <p style="text-align:center; opacity:0.4; font-size:0.8rem; padding:20px;">ASTILLERO INACTIVO</p>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
+    <div class="hangar-section">
+        <h4 class="sub-title"><i class="fas fa-warehouse"></i> HANGAR DE LA FLOTA</h4>
+        <div id="hangar-list" class="hangar-grid">
+            <p style="opacity:0.5; font-size:0.8rem;">Buscando naves en los hangares...</p>
+        </div>
+    </div>
+</div>
 
 
 
@@ -660,6 +638,7 @@
     </script>
 
 </body>
+
 
 
 
