@@ -180,3 +180,31 @@ async function finalizarNave(item) {
     if (typeof loadHangar === 'function') loadHangar(); // Si tienes la función de mostrar el hangar
 }
 
+async function loadHangar() {
+    const hangarList = document.getElementById('hangar-list'); // Crea este div en tu HTML
+    if (!hangarList) return;
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: fleet, error } = await supabaseClient.from('user_fleet')
+        .select('*')
+        .eq('user_id', user.id);
+
+    if (error) return console.error("Error cargando hangar:", error);
+
+    if (!fleet || fleet.length === 0) {
+        hangarList.innerHTML = "<p style='opacity:0.5; padding:20px;'>Hangar vacío. No hay naves estacionadas.</p>";
+        return;
+    }
+
+    hangarList.innerHTML = fleet.map(item => {
+        const shipInfo = NAVES_DISPONIBLES.find(s => s.id === item.ship_id);
+        return `
+            <div class="hangar-item" style="display:inline-block; margin:10px; padding:10px; border:1px solid #333; border-radius:5px;">
+                <img src="${shipInfo?.img}" style="width:50px; vertical-align:middle;">
+                <span style="margin-left:10px;">${item.quantity}x ${shipInfo?.name}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+
