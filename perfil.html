@@ -47,6 +47,21 @@
     
 
     <style>
+        .recurso-anim-negativa {
+    position: fixed;
+    color: #ff4d4d;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+    pointer-events: none;
+    z-index: 10000;
+    animation: flotarArriba 1.2s ease-out forwards;
+}
+
+@keyframes flotarArriba {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-60px); opacity: 0; }
+}
 
         .queue-item {
     background: rgba(0, 242, 255, 0.05);
@@ -573,5 +588,6 @@
     </script>
 
 </body>
+
 
 
