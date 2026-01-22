@@ -27,39 +27,63 @@ function renderAstillero() {
         </div>`).join('');
 }
 
-// 3. Lógica de construcción
 async function ordenarNave(id) {
-    const qty = parseInt(document.getElementById(`qty-${id}`).value);
-    if (!typeof AntiCheat === 'undefined' && !AntiCheat.isValidAmount(qty) || qty <= 0) return alert("Cantidad no válida");
+    // 1. Forzar actualización para tener los datos reales de la BD
+    await actualizarRecursosDesdeBD(); 
+
+    const qtyInput = document.getElementById(`qty-${id}`);
+    const qty = parseInt(qtyInput.value);
+    
+    if (isNaN(qty) || qty <= 0) return alert("Cantidad no válida");
 
     const ship = NAVES_DISPONIBLES.find(s => s.id === id);
     const costM = ship.metal * qty;
     const costS = ship.silicio * qty;
 
+    // COMPROBACIÓN: Usamos userResources que acabamos de actualizar
     if (userResources.metal >= costM && userResources.silicio >= costS) {
         const { data: { user } } = await supabaseClient.auth.getUser();
+        
+        // Actualizamos en Supabase usando el nombre de columna 'silicio' (confirmado en tu captura)
         const { error } = await supabaseClient.from('players').update({ 
             metal: userResources.metal - costM, 
             silicio: userResources.silicio - costS 
         }).eq('id', user.id);
         
         if (!error) {
+            // Actualizamos localmente para que la UI no salte hacia atrás
+            userResources.metal -= costM;
+            userResources.silicio -= costS;
+            
             if(typeof animarResta === 'function') {
                 animarResta('res-metal', costM);
                 animarResta('res-silice', costS);
             }
-            userResources.metal -= costM;
-            userResources.silicio -= costS;
-            actualizarInterfazRecursos();
+            
+            // Refrescar los números en la parte superior
+            document.getElementById('res-metal').innerText = Math.floor(userResources.metal);
+            document.getElementById('res-silice').innerText = Math.floor(userResources.silicio);
 
+            // Lógica de la cola de construcción
             let baseTime = new Date();
             if (shipQueue.length > 0) baseTime = new Date(shipQueue[shipQueue.length-1].finish_at);
             const finishAt = new Date(baseTime.getTime() + (ship.time * qty * 1000)).toISOString();
 
-            await supabaseClient.from('ship_queue').insert([{ user_id: user.id, ship_id: ship.id, quantity: qty, finish_at: finishAt }]);
+            await supabaseClient.from('ship_queue').insert([{ 
+                user_id: user.id, 
+                ship_id: ship.id, 
+                quantity: qty, 
+                finish_at: finishAt 
+            }]);
+            
             syncShipQueueFromDB();
+        } else {
+            console.error("Error al actualizar BD:", error);
+            alert("Error en la comunicación con el Comando Central.");
         }
-    } else { alert("Recursos insuficientes"); }
+    } else { 
+        alert(`Recursos insuficientes. Necesitas ${costM} de Ferrum y ${costS} de Sílice.`); 
+    }
 }
 
 // 4. Gestión de Cola y Base de Datos
@@ -136,4 +160,5 @@ async function registrarNaveEnBD(shipId, quantity) {
     } else {
         await supabaseClient.from('user_fleet').insert([{ user_id: user.id, ship_id: shipId, quantity: quantity }]);
     }
+
 }
