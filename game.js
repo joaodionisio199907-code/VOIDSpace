@@ -4,9 +4,10 @@ let userBuildings = { mina_metal: 0, mina_silicio: 0, mina_deuterio: 0, laborato
 let upgradeActive = { type: null, finish_at: null };
 let timerInterval = null; 
 
-// Nuevas variables para el motor de fluidez
+// Variables para el motor de fluidez
 let prodPorSegundo = { metal: 0, silicio: 0, deuterio: 0 };
 let lastUpdate = Date.now();
+let motorRunning = false; // Evita que el motor se duplique
 
 // --- CONFIGURACIÓN ---
 const DATA_VISUAL_EDIFICIOS = [
@@ -21,6 +22,7 @@ async function iniciarJuego() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
 
+    // Traemos los datos reales de la BD
     const { data: player } = await supabaseClient.from('players').select('*').eq('id', user.id).single();
     
     if (player) {
@@ -33,7 +35,7 @@ async function iniciarJuego() {
         userResources = { metal: player.metal, silicio: player.silicio, deuterio: player.deuterio };
         upgradeActive = { type: player.building_upgrading, finish_at: player.finish_at };
 
-        // Calcular producción por segundo real
+        // Cálculo de producción (Matemática idéntica a la BD)
         prodPorSegundo.metal = (userBuildings.mina_metal * 10) / 10;
         prodPorSegundo.silicio = (userBuildings.mina_silicio * 5) / 10;
         prodPorSegundo.deuterio = (userBuildings.mina_deuterio * 2) / 10;
@@ -41,26 +43,33 @@ async function iniciarJuego() {
         actualizarUI();
         if (upgradeActive.finish_at) iniciarRelojConstruccion();
         
-        // Lanzar el motor de fluidez
-        requestAnimationFrame(motorRecursosVisuales);
+        // Lanzar el motor de fluidez solo si no está corriendo
+        if (!motorRunning) {
+            motorRunning = true;
+            requestAnimationFrame(motorRecursosVisuales);
+        }
     }
 }
 
-// --- 2. MOTOR DE RECURSOS FLUIDO (Sin Lag) ---
+// --- 2. MOTOR DE RECURSOS FLUIDO ---
 function motorRecursosVisuales() {
     const ahora = Date.now();
-    const dt = (ahora - lastUpdate) / 1000; // Segundos transcurridos
+    const dt = (ahora - lastUpdate) / 1000; 
     lastUpdate = ahora;
 
-    // Sumar producción al estado local (solo si no estamos "congelados" por una mejora)
+    // Sumamos visualmente (sin afectar la BD aún)
     userResources.metal += prodPorSegundo.metal * dt;
     userResources.silicio += prodPorSegundo.silicio * dt;
     userResources.deuterio += prodPorSegundo.deuterio * dt;
 
-    // Actualizar números en pantalla (sin decimales para el usuario)
-    document.getElementById('res-metal').innerText = Math.floor(userResources.metal);
-    document.getElementById('res-silice').innerText = Math.floor(userResources.silicio);
-    document.getElementById('res-deuterio').innerText = Math.floor(userResources.deuterio);
+    // Dibujamos en pantalla
+    const elM = document.getElementById('res-metal');
+    const elS = document.getElementById('res-silice');
+    const elD = document.getElementById('res-deuterio');
+    
+    if (elM) elM.innerText = Math.floor(userResources.metal);
+    if (elS) elS.innerText = Math.floor(userResources.silicio);
+    if (elD) elD.innerText = Math.floor(userResources.deuterio);
 
     requestAnimationFrame(motorRecursosVisuales);
 }
@@ -81,31 +90,39 @@ function animarResta(idElemento, cantidad) {
     setTimeout(() => flotante.remove(), 1000);
 }
 
-// --- 4. GESTIÓN DE CONSTRUCCIÓN ---
+// --- 4. GESTIÓN DE CONSTRUCCIÓN (CON SINCRONIZACIÓN DE SEGURIDAD) ---
 async function mejorarEdificio(gameId) {
     if (upgradeActive.type) return;
 
-    const bInfo = DATA_VISUAL_EDIFICIOS.find(x => x.id === gameId);
-    const dbType = bInfo.db;
-    const nivelActual = userBuildings[dbType];
-    const costo = Math.floor(100 * Math.pow(1.5, nivelActual));
-    const tiempo = (nivelActual + 1) * 10;
-
-    const esIsotopo = (dbType === "mina_deuterio");
-    const idRes = esIsotopo ? 'res-silice' : 'res-metal';
-    const recurso = esIsotopo ? 'silicio' : 'metal';
-
-    if (userResources[recurso] < costo) return alert("Recursos insuficientes");
-
-    // ANIMACIÓN Y DESCUENTO
-    animarResta(idRes, costo);
-    userResources[recurso] -= costo;
-
-    const finishAt = new Date(Date.now() + tiempo * 1000).toISOString();
     const { data: { user } } = await supabaseClient.auth.getUser();
 
+    // SEGURIDAD: Antes de comprar, validamos contra la BD real, no el visual
+    const { data: player } = await supabaseClient.from('players').select('*').eq('id', user.id).single();
+    
+    const bInfo = DATA_VISUAL_EDIFICIOS.find(x => x.id === gameId);
+    const dbType = bInfo.db;
+    const nivelActual = player[`lvl_${dbType}`] || 0;
+    const costo = Math.floor(100 * Math.pow(1.5, nivelActual));
+    
+    const esIsotopo = (dbType === "mina_deuterio");
+    const recurso = esIsotopo ? 'silicio' : 'metal';
+    const idResUI = esIsotopo ? 'res-silice' : 'res-metal';
+
+    // Comprobamos contra la base de datos
+    if (player[recurso] < costo) {
+        return alert(`Recursos insuficientes en el servidor. Real: ${Math.floor(player[recurso])} | Costo: ${costo}`);
+    }
+
+    // ANIMACIÓN Y DESCUENTO LOCAL
+    animarResta(idResUI, costo);
+    userResources[recurso] -= costo;
+
+    const tiempo = (nivelActual + 1) * 10;
+    const finishAt = new Date(Date.now() + tiempo * 1000).toISOString();
+
+    // ACTUALIZAR BASE DE DATOS
     await supabaseClient.from('players').update({ 
-        [recurso]: userResources[recurso],
+        [recurso]: player[recurso] - costo, // Restamos del valor real de la BD
         building_upgrading: dbType,
         finish_at: finishAt
     }).eq('id', user.id);
@@ -115,7 +132,7 @@ async function mejorarEdificio(gameId) {
     iniciarRelojConstruccion();
 }
 
-// --- 5. SINCRONIZACIÓN DE SEGURIDAD (Cada 30s guarda en BD) ---
+// --- 5. SINCRONIZACIÓN DE SEGURIDAD (Cada 20s para reducir brecha visual) ---
 setInterval(async () => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
@@ -125,10 +142,9 @@ setInterval(async () => {
         silicio: userResources.silicio,
         deuterio: userResources.deuterio
     }).eq('id', user.id);
-    console.log("Reserva sincronizada con el Comando Central.");
-}, 30000);
+}, 20000);
 
-// --- RESTO DE FUNCIONES (renderList, iniciarReloj, etc.) ---
+// --- RESTO DE FUNCIONES ---
 function renderList(section) {
     const container = document.getElementById(section + '-list');
     if (!container) return;
