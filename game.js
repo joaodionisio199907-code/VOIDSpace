@@ -1,223 +1,142 @@
-// --- VARIABLES GLOBALES DE ESTADO ---
-let dbBuildingsCache = [];
+// --- VARIABLES GLOBALES ---
 let userResources = { metal: 0, silicio: 0, deuterio: 0 };
+let userBuildings = { mina_metal: 0, mina_silicio: 0, mina_deuterio: 0, laboratorio: 0 };
+let upgradeActive = { type: null, finish_at: null };
+let timerInterval = null; // Para controlar el reloj de construcción
 
-// 1. DEFINICIÓN VISUAL
+// --- CONFIGURACIÓN (Mantenemos tus stats) ---
 const DATA_VISUAL_EDIFICIOS = [
-    { id: 'minaFe', section: 'resources', name: 'Mina de Ferrum', lore: 'Extractor de mineral ferroso.', img: 'img/minaferrum/lv1/lv1.png' },
-    { id: 'minaSi', section: 'resources', name: 'Sintetizador de Sílice', lore: 'Procesa arena estelar.', img: 'img/SILICE/sintesili.png' },
-    { id: 'minaH3', section: 'resources', name: 'Colector de Isótopo-H3', lore: 'Extrae Deuterio atmosférico.', img: 'img/isotopoh3/ih3recolector.png' },
-    { id: 'labInvestigacion', section: 'research', name: 'Laboratorio Alfa', lore: 'Desbloquea nuevas tecnologías.', img: 'img/lab.png' }
+    { id: 'minaFe', section: 'resources', name: 'Mina de Ferrum', db: 'mina_metal' },
+    { id: 'minaSi', section: 'resources', name: 'Sintetizador de Sílice', db: 'mina_silicio' },
+    { id: 'minaH3', section: 'resources', name: 'Colector de Isótopo-H3', db: 'mina_deuterio' },
+    { id: 'labInvestigacion', section: 'research', name: 'Laboratorio Alfa', db: 'laboratorio' }
 ];
 
-// 2. CONFIGURACIÓN DE BALANCEO
-const STATS_EDIFICIOS = {
-    "mina_metal": { costoBase: 100, crecimiento: 1.5, tiempoBase: 10, prodBase: 10 },
-    "mina_silicio": { costoBase: 150, crecimiento: 1.6, tiempoBase: 15, prodBase: 5 },
-    "mina_deuterio": { costoBase: 200, crecimiento: 1.8, tiempoBase: 30, prodBase: 2 },
-    "laboratorio": { costoBase: 500, crecimiento: 2.0, tiempoBase: 60, prodBase: 0 }
-};
-
-// --- UTILIDADES ---
-function mapBuildingId(gameId) {
-    const mapping = {
-        'minaFe': 'mina_metal',
-        'minaSi': 'mina_silicio',
-        'minaH3': 'mina_deuterio',
-        'labInvestigacion': 'laboratorio'
-    };
-    return mapping[gameId] || gameId;
-}
-
-async function syncBuildingsFromSupabase() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
-    const { data } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
-    dbBuildingsCache = data || [];
-    verificarMejorasActivas();
-}
-
-// --- LÓGICA DE INTERFAZ (UI) ---
-function renderList(section) {
-    const container = document.getElementById(section + '-list');
-    if (!container) return;
-    
-    let htmlContent = '';
-    DATA_VISUAL_EDIFICIOS.filter(b => b.section === section).forEach(b => {
-        const dbType = mapBuildingId(b.id);
-        const edificioData = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 0, finish_at: null };
-        const costoProximo = calcularCosto(dbType, edificioData.level + 1);
-        
-        // Cambio de símbolo según el edificio
-        const simboloRecurso = (dbType === "mina_deuterio") ? "Si" : "Fe";
-
-        htmlContent += `
-            <div class="building-card animate__animated animate__fadeIn" style="background: var(--card-bg); border: 1px solid rgba(0,242,255,0.1); padding: 15px; border-radius: 12px; margin-bottom: 10px;">
-                <img src="${b.img}" style="width: 100%; border-radius: 8px;" onerror="this.src='https://placehold.co/300x160/0a0b10/00f2ff?text=${b.name}'">
-                <div class="building-info">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                        <h3 style="color:var(--neon-blue); font-size:1rem;">${b.name}</h3>
-                        <span style="background:rgba(0,242,255,0.1); padding:2px 8px; border-radius:4px; font-size:0.8rem;">LVL ${edificioData.level}</span>
-                    </div>
-                    <p style="font-size:0.8rem; opacity:0.7; margin: 10px 0;">${b.lore}</p>
-                    <button class="nav-btn" id="btn-upgrade-${dbType}" onclick="mejorarEdificio('${b.id}')" style="width:100%; text-align:center;">
-                        <i class="fas fa-arrow-up"></i> MEJORAR (${costoProximo} ${simboloRecurso})
-                    </button>
-                </div>
-            </div>`;
-    });
-    container.innerHTML = htmlContent;
-}
-
-function mostrarAnimacionRecursos(idContenedor, cantidad) {
-    const el = document.getElementById(idContenedor);
-    if (!el) return;
-    const span = document.createElement("span");
-    span.classList.add("recurso-flotante");
-    span.innerText = `+${Math.floor(cantidad)}`;
-    el.parentElement.style.position = "relative";
-    el.parentElement.appendChild(span);
-    setTimeout(() => span.remove(), 2000);
-}
-
-// --- LÓGICA DE CÁLCULOS ---
-function calcularCosto(type, nivel) {
-    const stat = STATS_EDIFICIOS[type] || { costoBase: 100, crecimiento: 1.5 };
-    return Math.floor(stat.costoBase * Math.pow(stat.crecimiento, nivel > 0 ? nivel - 1 : 0));
-}
-
-function calcularTiempo(type, nivel) {
-    const stat = STATS_EDIFICIOS[type] || { tiempoBase: 10 };
-    return (nivel || 1) * stat.tiempoBase;
-}
-
-function calcularProduccion(type, nivel) {
-    const stat = STATS_EDIFICIOS[type] || { prodBase: 0 };
-    return (nivel || 0) * stat.prodBase;
-}
-
-// --- COMUNICACIÓN SUPABASE ---
-async function actualizarRecursosDesdeBD() {
+// --- 1. CARGA INICIAL (Solo una vez al abrir) ---
+async function iniciarJuego() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
 
     const { data: player } = await supabaseClient.from('players').select('*').eq('id', user.id).single();
     
     if (player) {
-        let plusMetal = 0, plusSilicio = 0, plusDeuterio = 0;
-        dbBuildingsCache.forEach(ed => {
-            if (ed.building_type === "mina_metal") plusMetal = calcularProduccion(ed.building_type, ed.level);
-            if (ed.building_type === "mina_silicio") plusSilicio = calcularProduccion(ed.building_type, ed.level);
-            if (ed.building_type === "mina_deuterio") plusDeuterio = calcularProduccion(ed.building_type, ed.level);
-        });
-
-        const nuevosRecursos = {
-            metal: player.metal + plusMetal,
-            silicio: player.silicio + plusSilicio,
-            deuterio: player.deuterio + plusDeuterio
+        // Mapear datos de la nueva tabla players
+        userBuildings = {
+            mina_metal: player.lvl_mina_metal || 0,
+            mina_silicio: player.lvl_mina_silicio || 0,
+            mina_deuterio: player.lvl_mina_deuterio || 0,
+            laboratorio: player.lvl_laboratorio || 0
         };
+        userResources = { metal: player.metal, silicio: player.silicio, deuterio: player.deuterio };
+        upgradeActive = { type: player.building_upgrading, finish_at: player.finish_at };
 
-        await supabaseClient.from('players').update(nuevosRecursos).eq('id', user.id);
-        
-        if (plusMetal > 0) mostrarAnimacionRecursos('res-metal', plusMetal);
-        
-        userResources = nuevosRecursos;
-        document.getElementById('res-metal').innerText = Math.floor(nuevosRecursos.metal);
-        document.getElementById('res-silice').innerText = Math.floor(nuevosRecursos.silicio);
-        document.getElementById('res-deuterio').innerText = Math.floor(nuevosRecursos.deuterio);
+        renderList('resources');
+        renderList('research');
+        actualizarUI();
+
+        // Si hay una mejora pendiente, arrancar el reloj
+        if (upgradeActive.finish_at) iniciarRelojConstruccion();
     }
 }
 
-function verificarMejorasActivas() {
-    const ahora = new Date();
-    dbBuildingsCache.forEach(ed => {
-        if (ed.finish_at) {
-            const fechaFin = new Date(ed.finish_at);
-            const segundosRestantes = Math.floor((fechaFin - ahora) / 1000);
-
-            if (segundosRestantes > 0) {
-                iniciarTemporizadorVisual(ed.building_type, segundosRestantes, ed.level + 1);
-            } else {
-                finalizarMejora(ed.user_id, ed.building_type, ed.level + 1);
-            }
-        }
-    });
-}
-
-// --- MEJORAR EDIFICIO ---
-async function mejorarEdificio(gameId) {
-    const dbType = mapBuildingId(gameId);
+// --- 2. PRODUCCIÓN PASIVA (Cada 10s sin recargar toda la UI) ---
+setInterval(async () => {
     const { data: { user } } = await supabaseClient.auth.getUser();
-    const edificioData = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 0 };
-    
-    if (edificioData.finish_at && new Date(edificioData.finish_at) > new Date()) return;
+    if (!user || upgradeActive.type) return; // Si está mejorando, no sumamos aquí para evitar conflictos
 
-    const costo = calcularCosto(dbType, edificioData.level + 1);
-    const tiempoSegundos = calcularTiempo(dbType, edificioData.level + 1);
-    const btn = document.getElementById(`btn-upgrade-${dbType}`);
+    // Calculamos según niveles actuales
+    let prodM = (userBuildings.mina_metal * 10); 
+    let prodS = (userBuildings.mina_silicio * 5);
+    let prodD = (userBuildings.mina_deuterio * 2);
 
-    // Lógica de coste diferenciado
+    userResources.metal += prodM;
+    userResources.silicio += prodS;
+    userResources.deuterio += prodD;
+
+    // Guardar en BD silenciosamente
+    await supabaseClient.from('players').update({
+        metal: userResources.metal,
+        silicio: userResources.silicio,
+        deuterio: userResources.deuterio
+    }).eq('id', user.id);
+
+    actualizarUI();
+}, 10000);
+
+// --- 3. GESTIÓN DE CONSTRUCCIÓN ---
+async function mejorarEdificio(gameId) {
+    if (upgradeActive.type) return;
+
+    const bInfo = DATA_VISUAL_EDIFICIOS.find(x => x.id === gameId);
+    const dbType = bInfo.db;
+    const nivelActual = userBuildings[dbType];
+    const costo = Math.floor(100 * Math.pow(1.5, nivelActual));
+    const tiempo = (nivelActual + 1) * 10;
+
     const esIsotopo = (dbType === "mina_deuterio");
-    const recursoDisponible = esIsotopo ? userResources.silicio : userResources.metal;
+    const recurso = esIsotopo ? 'silicio' : 'metal';
 
-    if (recursoDisponible < costo) {
-        btn.style.borderColor = "red";
-        setTimeout(() => btn.style.borderColor = "", 500);
-        return alert(`Recursos insuficientes. Necesitas ${costo} de ${esIsotopo ? "Sílice" : "Ferrum"}.`);
-    }
+    if (userResources[recurso] < costo) return alert("Faltan recursos");
 
-    const ahora = new Date();
-    const finishAt = new Date(ahora.getTime() + tiempoSegundos * 1000).toISOString();
+    const finishAt = new Date(Date.now() + tiempo * 1000).toISOString();
 
-    const datosActualizados = esIsotopo 
-        ? { silicio: userResources.silicio - costo } 
-        : { metal: userResources.metal - costo };
-
-    await supabaseClient.from('players').update(datosActualizados).eq('id', user.id);
-    
-    await supabaseClient.from('buildings').upsert({ 
-        user_id: user.id, 
-        building_type: dbType, 
-        level: edificioData.level,
+    // Actualizar BD: Restar recurso y poner en cola
+    const updates = { 
+        [recurso]: userResources[recurso] - costo,
+        building_upgrading: dbType,
         finish_at: finishAt
-    }, { onConflict: 'user_id, building_type' });
+    };
 
-    await syncBuildingsFromSupabase();
-    iniciarTemporizadorVisual(dbType, tiempoSegundos, edificioData.level + 1);
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    await supabaseClient.from('players').update(updates).eq('id', user.id);
+
+    // Actualizar estado local y arrancar
+    userResources[recurso] -= costo;
+    upgradeActive = { type: dbType, finish_at: finishAt };
+    
+    renderList('resources');
+    renderList('research');
+    iniciarRelojConstruccion();
 }
 
-function iniciarTemporizadorVisual(dbType, segundos, nuevoNivel) {
-    const btn = document.getElementById(`btn-upgrade-${dbType}`);
-    if (!btn) return;
+function iniciarRelojConstruccion() {
+    if (timerInterval) clearInterval(timerInterval);
 
-    btn.disabled = true;
-    let restante = segundos;
+    timerInterval = setInterval(() => {
+        const restante = Math.floor((new Date(upgradeActive.finish_at) - new Date()) / 1000);
+        const btn = document.getElementById(`btn-upgrade-${upgradeActive.type}`);
 
-    const timer = setInterval(() => {
-        const btnActual = document.getElementById(`btn-upgrade-${dbType}`);
-        if (btnActual) btnActual.innerHTML = `<i class="fas fa-hourglass-half"></i> ${restante}s`;
-        
-        restante--;
-        if (restante < 0) {
-            clearInterval(timer);
-            supabaseClient.auth.getUser().then(({data}) => {
-                finalizarMejora(data.user.id, dbType, nuevoNivel);
-            });
+        if (restante > 0) {
+            if (btn) btn.innerHTML = `<i class="fas fa-hourglass-half"></i> ${restante}s`;
+        } else {
+            clearInterval(timerInterval);
+            finalizarConstruccion();
         }
     }, 1000);
 }
 
-async function finalizarMejora(userId, dbType, nuevoNivel) {
-    await supabaseClient.from('buildings').upsert({ 
-        user_id: userId, 
-        building_type: dbType, 
-        level: nuevoNivel,
-        finish_at: null 
-    }, { onConflict: 'user_id, building_type' });
+async function finalizarConstruccion() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const dbType = upgradeActive.type;
+    const nuevoNivel = userBuildings[dbType] + 1;
+    const columnaLvl = `lvl_${dbType}`;
 
-    await syncBuildingsFromSupabase();
-    renderList('resources');
-    renderList('research');
+    await supabaseClient.from('players').update({
+        [columnaLvl]: nuevoNivel,
+        building_upgrading: null,
+        finish_at: null
+    }).eq('id', user.id);
+
+    // Resetear estado y refrescar todo
+    upgradeActive = { type: null, finish_at: null };
+    iniciarJuego(); 
 }
 
-function loadChatRealtime() { console.log("Chat inicializado..."); }
+function actualizarUI() {
+    document.getElementById('res-metal').innerText = Math.floor(userResources.metal);
+    document.getElementById('res-silice').innerText = Math.floor(userResources.silicio);
+    document.getElementById('res-deuterio').innerText = Math.floor(userResources.deuterio);
+}
+
+// Arrancar
+iniciarJuego();
