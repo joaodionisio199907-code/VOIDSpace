@@ -255,17 +255,7 @@
             setTimeout(() => flotante.remove(), 1500);
         }
 
-        function abrirAjustesPerfil() { document.getElementById('modal-perfil').style.display = 'flex'; }
-        function cerrarAjustesPerfil() { document.getElementById('modal-perfil').style.display = 'none'; }
-        
-        async function guardarPerfil() {
-            const nick = document.getElementById('edit-nickname').value;
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            await supabaseClient.from('players').update({ nickname: nick }).eq('id', user.id);
-            alert("Identidad actualizada.");
-            cerrarAjustesPerfil();
-        }
-
+       
         // --- INICIALIZACIÓN ---
         (async () => {
             await syncBuildingsFromSupabase();
@@ -280,6 +270,7 @@
     <script src="astillero.js"></script> </body>
 </body>
 </html>
+
 
 
 
