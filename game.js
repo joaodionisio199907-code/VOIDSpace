@@ -34,8 +34,6 @@ async function syncBuildingsFromSupabase() {
     if (!user) return;
     const { data } = await supabaseClient.from('buildings').select('*').eq('user_id', user.id);
     dbBuildingsCache = data || [];
-    
-    // Al sincronizar, revisamos si hay mejoras que terminaron mientras estábamos desconectados
     verificarMejorasActivas();
 }
 
@@ -49,6 +47,9 @@ function renderList(section) {
         const dbType = mapBuildingId(b.id);
         const edificioData = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 0, finish_at: null };
         const costoProximo = calcularCosto(dbType, edificioData.level + 1);
+        
+        // Cambio de símbolo según el edificio
+        const simboloRecurso = (dbType === "mina_deuterio") ? "Si" : "Fe";
 
         htmlContent += `
             <div class="building-card animate__animated animate__fadeIn" style="background: var(--card-bg); border: 1px solid rgba(0,242,255,0.1); padding: 15px; border-radius: 12px; margin-bottom: 10px;">
@@ -60,7 +61,7 @@ function renderList(section) {
                     </div>
                     <p style="font-size:0.8rem; opacity:0.7; margin: 10px 0;">${b.lore}</p>
                     <button class="nav-btn" id="btn-upgrade-${dbType}" onclick="mejorarEdificio('${b.id}')" style="width:100%; text-align:center;">
-                        <i class="fas fa-arrow-up"></i> MEJORAR (${costoProximo} Fe)
+                        <i class="fas fa-arrow-up"></i> MEJORAR (${costoProximo} ${simboloRecurso})
                     </button>
                 </div>
             </div>`;
@@ -95,7 +96,7 @@ function calcularProduccion(type, nivel) {
     return (nivel || 0) * stat.prodBase;
 }
 
-// --- COMUNICACIÓN SUPABASE (TABLA PLAYERS) ---
+// --- COMUNICACIÓN SUPABASE ---
 async function actualizarRecursosDesdeBD() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
@@ -127,7 +128,6 @@ async function actualizarRecursosDesdeBD() {
     }
 }
 
-// --- NUEVA FUNCIÓN: VERIFICAR MEJORAS AL CARGAR ---
 function verificarMejorasActivas() {
     const ahora = new Date();
     dbBuildingsCache.forEach(ed => {
@@ -138,38 +138,43 @@ function verificarMejorasActivas() {
             if (segundosRestantes > 0) {
                 iniciarTemporizadorVisual(ed.building_type, segundosRestantes, ed.level + 1);
             } else {
-                // Si el tiempo ya pasó, finalizamos la mejora automáticamente
                 finalizarMejora(ed.user_id, ed.building_type, ed.level + 1);
             }
         }
     });
 }
 
-// --- MEJORAR EDIFICIO ACTUALIZADO ---
+// --- MEJORAR EDIFICIO ---
 async function mejorarEdificio(gameId) {
     const dbType = mapBuildingId(gameId);
     const { data: { user } } = await supabaseClient.auth.getUser();
     const edificioData = dbBuildingsCache.find(db => db.building_type === dbType) || { level: 0 };
     
-    // Anti-cheat básico: No permitir dos mejoras simultáneas del mismo edificio
     if (edificioData.finish_at && new Date(edificioData.finish_at) > new Date()) return;
 
     const costo = calcularCosto(dbType, edificioData.level + 1);
     const tiempoSegundos = calcularTiempo(dbType, edificioData.level + 1);
     const btn = document.getElementById(`btn-upgrade-${dbType}`);
 
-    if (userResources.metal < costo) {
+    // Lógica de coste diferenciado
+    const esIsotopo = (dbType === "mina_deuterio");
+    const recursoDisponible = esIsotopo ? userResources.silicio : userResources.metal;
+
+    if (recursoDisponible < costo) {
         btn.style.borderColor = "red";
         setTimeout(() => btn.style.borderColor = "", 500);
-        return alert("Recursos insuficientes.");
+        return alert(`Recursos insuficientes. Necesitas ${costo} de ${esIsotopo ? "Sílice" : "Ferrum"}.`);
     }
 
-    // 1. Calcular hora de finalización
     const ahora = new Date();
     const finishAt = new Date(ahora.getTime() + tiempoSegundos * 1000).toISOString();
 
-    // 2. Descontar y Guardar en BD con fecha de fin
-    await supabaseClient.from('players').update({ metal: userResources.metal - costo }).eq('id', user.id);
+    const datosActualizados = esIsotopo 
+        ? { silicio: userResources.silicio - costo } 
+        : { metal: userResources.metal - costo };
+
+    await supabaseClient.from('players').update(datosActualizados).eq('id', user.id);
+    
     await supabaseClient.from('buildings').upsert({ 
         user_id: user.id, 
         building_type: dbType, 
@@ -177,7 +182,7 @@ async function mejorarEdificio(gameId) {
         finish_at: finishAt
     }, { onConflict: 'user_id, building_type' });
 
-    await syncBuildingsFromSupabase(); // Refrescar cache local
+    await syncBuildingsFromSupabase();
     iniciarTemporizadorVisual(dbType, tiempoSegundos, edificioData.level + 1);
 }
 
@@ -203,7 +208,6 @@ function iniciarTemporizadorVisual(dbType, segundos, nuevoNivel) {
 }
 
 async function finalizarMejora(userId, dbType, nuevoNivel) {
-    // Seteamos finish_at en null para indicar que terminó
     await supabaseClient.from('buildings').upsert({ 
         user_id: userId, 
         building_type: dbType, 
