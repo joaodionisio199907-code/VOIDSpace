@@ -11,15 +11,22 @@ let shipTimerInterval = null;
 function renderAstillero() {
     const container = document.getElementById('fleet-list-container');
     if (!container) return;
+    
     container.innerHTML = NAVES_DISPONIBLES.map(ship => `
-        <div class="building-card">
-            <img src="${ship.img}" style="width: 100%; border-radius: 8px;">
-            <div class="building-info">
-                <h3 style="color:var(--neon-blue); font-size:1rem;">${ship.name}</h3>
-                <p style="font-size:0.8rem; margin:5px 0;">M: ${ship.metal} | S: ${ship.silicio}</p>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <input type="number" id="qty-${ship.id}" value="1" min="1" style="width:60px; background:#000; color:#fff; border:1px solid var(--neon-blue); border-radius:4px; padding:5px;">
-                    <button class="nav-btn" onclick="ordenarNave('${ship.id}')" style="flex:1;">CONSTRUIR</button>
+        <div class="ship-card-horizontal">
+            <div class="ship-img-frame">
+                <img src="${ship.img}" onerror="this.src='https://placehold.co/200x120?text=NAVE'">
+            </div>
+            <div class="ship-details">
+                <div class="ship-header">
+                    <h3>${ship.name}</h3>
+                    <span class="ship-price">M: ${ship.metal} | S: ${ship.silicio}</span>
+                </div>
+                <div class="ship-actions">
+                    <input type="number" id="qty-${ship.id}" value="1" min="1" class="ship-input">
+                    <button class="build-btn" onclick="ordenarNave('${ship.id}')">
+                        <i class="fas fa-hammer"></i> CONSTRUIR
+                    </button>
                 </div>
             </div>
         </div>`).join('');
@@ -172,3 +179,4 @@ async function finalizarNave(item) {
     syncShipQueueFromDB();
     if (typeof loadHangar === 'function') loadHangar(); // Si tienes la función de mostrar el hangar
 }
+
